@@ -30,8 +30,8 @@ class _BaseConfig:
 
 
 class Postgres:
-    port = getenv("PG_PORT", "5434")
-    host = getenv("PG_HOST", "0.0.0.0")  # noqa: S104
+    port = getenv("PG_PORT", "5432")
+    host = getenv("PG_HOST", "host.docker.internal")  # noqa: S104
     user = getenv("PG_USER", "admin")
     password = getenv("PG_PASSWORD", "admin")
     database = getenv("PG_DB", "recording_oracle")
@@ -127,7 +127,8 @@ class IStorageConfig:
 
 
 class StorageConfig(IStorageConfig):
-    provider = os.environ["STORAGE_PROVIDER"].lower()
+    #provider = os.environ["STORAGE_PROVIDER"].lower()
+    provider = os.getenv("STORAGE_PROVIDER", "aws").lower()
     endpoint_url = os.environ["STORAGE_ENDPOINT_URL"]  # TODO: probably should be optional
     data_bucket_name = os.environ["STORAGE_RESULTS_BUCKET_NAME"]
     secure = to_bool(getenv("STORAGE_USE_SSL", "true"))

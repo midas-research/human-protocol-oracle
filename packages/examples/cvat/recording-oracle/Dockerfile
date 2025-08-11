@@ -14,4 +14,6 @@ RUN poetry config virtualenvs.create false \
 
 COPY . .
 
+EXPOSE 8010 6379 5432
+
 CMD ["sh", "./bin/start_dev.sh"]

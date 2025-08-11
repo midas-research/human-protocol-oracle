@@ -35,7 +35,7 @@ class _BaseConfig:
 
 class PostgresConfig:
     port = getenv("PG_PORT", "5432")
-    host = getenv("PG_HOST", "0.0.0.0")  # noqa: S104
+    host = getenv("PG_HOST", "host.docker.internal")  # noqa: S104
     user = getenv("PG_USER", "admin")
     password = getenv("PG_PASSWORD", "admin")
     database = getenv("PG_DB", "exchange_oracle")
@@ -48,7 +48,7 @@ class PostgresConfig:
 
 class RedisConfig:
     port = int(getenv("REDIS_PORT", "6379"))
-    host = getenv("REDIS_HOST", "0.0.0.0")  # noqa: S104
+    host = getenv("REDIS_HOST", "host.docker.internal")  # noqa: S104
     database = int(getenv("REDIS_DB", "0"))
     user = getenv("REDIS_USER", "")
     password = getenv("REDIS_PASSWORD", "")
