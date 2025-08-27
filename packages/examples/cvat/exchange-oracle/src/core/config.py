@@ -162,6 +162,7 @@ class CvatConfig:
     admin_login = getenv("CVAT_ADMIN", "admin")
     admin_pass = getenv("CVAT_ADMIN_PASS", "admin")
     org_slug = getenv("CVAT_ORG_SLUG", "")
+    ui_url = getenv("CVAT_UI_URL", "http://localhost:3000")
 
     image_quality = int(getenv("CVAT_IMAGE_QUALITY", 70))
     max_jobs_per_task = int(getenv("CVAT_MAX_JOBS_PER_TASK", 1000))

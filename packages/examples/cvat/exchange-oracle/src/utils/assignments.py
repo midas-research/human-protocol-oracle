@@ -27,7 +27,7 @@ def compose_assignment_url(task_id: int, job_id: int, *, project: Project) -> st
     if project.job_type == TaskTypes.audio_transcription:
         query_params += "?org=" + Config.cvat_config.org_slug
 
-    return urljoin("https://app.audino.in", f"/annotate/{task_id}/{job_id}{query_params}")
+    return urljoin(Config.cvat_config.ui_url, f"/annotate/{task_id}/{job_id}{query_params}")
 
 
 def get_default_assignment_timeout(task_type: TaskTypes) -> int:
