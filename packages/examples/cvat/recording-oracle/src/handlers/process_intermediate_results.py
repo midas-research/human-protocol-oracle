@@ -497,6 +497,7 @@ class _AudinoTaskValidator:
 
         comparator = AudinoDatasetComparator(
             min_similarity_threshold=min_quality,
+            task_type=manifest.annotation.type
         )
 
         self._parse_merged_annotations()
@@ -606,8 +607,9 @@ class _AudinoTaskValidator:
 
 
 class AudinoDatasetComparator:
-    def __init__(self, min_similarity_threshold: float):
+    def __init__(self, min_similarity_threshold: float, task_type: str):
         self._min_similarity_threshold = min_similarity_threshold
+        self._task_type = task_type
 
     def iou(self, start1: float, end1: float, start2: float, end2: float) -> float:
         """Calculate IoU for time intervals."""
@@ -691,7 +693,7 @@ class AudinoDatasetComparator:
         gt_samples_filtered = [
             gt_ann
             for gt_ann in gt_dataset
-            if (start_time - 1.5) <= gt_ann["start"] and gt_ann["end"] <= (end_time + 1.5)
+            if (start_time - 0.5) <= gt_ann["start"] and gt_ann["end"] <= (end_time + 0.5)
         ]
 
         # Filtering ds_dataset to include only those within intersecting region of GT
@@ -699,19 +701,40 @@ class AudinoDatasetComparator:
             ds_ann for ds_ann in ds_dataset if ds_ann["end"] <= (job_duration + 1.5)
         ]
 
-        # if gt_samples_filtered is None:
-        #     raise TooFewGtError
-
         gt_samples_filtered.sort(key=lambda ann: ann["start"])
         ds_samples_filtered.sort(key=lambda ann: ann["start"])
 
-        gt_transcriptions = " ".join([gt.get("text", "") for gt in gt_samples_filtered]).lower()
-        ds_transcriptions = " ".join([ds.get("text", "") for ds in ds_samples_filtered]).lower()
+        score = 0.0
 
-        wer = min(max(self.word_error_rate(gt_transcriptions, ds_transcriptions), 0.0), 1.0)
-        cer = min(max(self.character_error_rate(gt_transcriptions, ds_transcriptions), 0.0), 1.0)
+        if self._task_type == TaskTypes.audio_transcription:
+            # gt_transcriptions = " ".join([gt.get("text", "") for gt in gt_samples_filtered]).lower()
+            # ds_transcriptions = " ".join([ds.get("text", "") for ds in ds_samples_filtered]).lower()
 
-        return min(max((1 - wer + 1 - cer) / 2.0, 0.0), 1.0)
+            # wer = min(max(self.word_error_rate(gt_transcriptions, ds_transcriptions), 0.0), 1.0)
+            # cer = min(max(self.character_error_rate(gt_transcriptions, ds_transcriptions), 0.0), 1.0)
+
+            # score = min(max((1 - wer + 1 - cer) / 2.0, 0.0), 1.0)
+
+            gt_samples_labels = [gt.get("label", "") for gt in gt_samples_filtered]
+            ds_samples_labels = [ds.get("label", "") for ds in ds_samples_filtered]
+
+            if not gt_samples_labels:  # Handle empty ground truth
+                if not ds_samples_labels:
+                    score = 1.0
+                else:
+                    score = 0.0
+
+            # Take only the first len(gt_labels) elements from ds_labels
+            ds_labels_trimmed = ds_samples_labels[:len(gt_samples_labels)]
+
+            correct_matches = 0
+            for i in range(len(gt_samples_labels)):
+                if i < len(ds_labels_trimmed) and gt_samples_labels[i] == ds_labels_trimmed[i]:
+                    correct_matches += 1
+
+            score = correct_matches / len(gt_samples_labels)
+
+        return score
 
 
 @dataclass
