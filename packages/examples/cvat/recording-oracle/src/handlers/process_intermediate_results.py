@@ -717,10 +717,19 @@ class AudinoDatasetComparator:
 
         elif self._task_type == TaskTypes.audio_attribute_annotation:
             penalty_factor = 0.1
-            def calculate_score(gt_samples, ds_samples):
+            def calculate_score(gt_samples, ds_samples, start_time=0):
+                gt_samples_adjusted = []
+                for ann in gt_samples:
+                    adjusted_ann = ann.copy()
+                    adjusted_points = adjusted_ann["points"].copy()
+                    adjusted_points[0] = round(adjusted_points[0] - start_time, 10)  # Round to 10 decimal places
+                    adjusted_points[3] = round(adjusted_points[3] - start_time, 10)
+                    adjusted_ann["points"] = adjusted_points
+                    gt_samples_adjusted.append(adjusted_ann)
+
                 # Group annotations by label
                 gt_by_label = {}
-                for idx, ann in enumerate(gt_samples):
+                for idx, ann in enumerate(gt_samples_adjusted):
                     label = ann.get("label", "")
                     if label not in gt_by_label:
                         gt_by_label[label] = []
@@ -791,7 +800,7 @@ class AudinoDatasetComparator:
 
                         # Calculate total coverage
                         total_covered = sum(end - start for start, end in covered_intervals)
-                        coverage_ratio = min(1.0, total_covered / gt_length)
+                        coverage_ratio = min(1.0, total_covered / gt_length) if gt_length > 0 else 0
                         gt_coverage[gt_idx] = coverage_ratio
 
                     # Add unused predictions for this label to global list
@@ -818,7 +827,7 @@ class AudinoDatasetComparator:
 
                 return final_score
 
-            score = calculate_score(gt_samples_filtered, ds_samples_filtered)
+            score = calculate_score(gt_samples_filtered, ds_samples_filtered, start_time)
 
         return score
 
