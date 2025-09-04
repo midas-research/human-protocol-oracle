@@ -18,6 +18,7 @@ class TaskTypes(str, Enum, metaclass=BetterEnumMeta):
     image_boxes_from_points = "image_boxes_from_points"
     image_skeletons_from_boxes = "image_skeletons_from_boxes"
     audio_transcription = "audio_transcription"
+    audio_attribute_annotation = "audio_attribute_annotation"
 
 
 class OracleWebhookTypes(str, Enum):

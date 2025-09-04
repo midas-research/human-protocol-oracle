@@ -89,7 +89,7 @@ def _export_escrow_annotations(
         # might want to make this the only behaviour in the future
         project_annotations_file = None
         project_images = None
-    elif manifest.annotation.type == TaskTypes.audio_transcription:
+    elif manifest.annotation.type in [TaskTypes.audio_transcription, TaskTypes.audio_attribute_annotation]:
         project_annotations_file = _make_project_annotation(job_annotations)
         project_images = None
     else:

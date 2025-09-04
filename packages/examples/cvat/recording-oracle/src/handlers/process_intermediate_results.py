@@ -707,32 +707,118 @@ class AudinoDatasetComparator:
         score = 0.0
 
         if self._task_type == TaskTypes.audio_transcription:
-            # gt_transcriptions = " ".join([gt.get("text", "") for gt in gt_samples_filtered]).lower()
-            # ds_transcriptions = " ".join([ds.get("text", "") for ds in ds_samples_filtered]).lower()
+            gt_transcriptions = " ".join([gt.get("text", "") for gt in gt_samples_filtered]).lower()
+            ds_transcriptions = " ".join([ds.get("text", "") for ds in ds_samples_filtered]).lower()
 
-            # wer = min(max(self.word_error_rate(gt_transcriptions, ds_transcriptions), 0.0), 1.0)
-            # cer = min(max(self.character_error_rate(gt_transcriptions, ds_transcriptions), 0.0), 1.0)
+            wer = min(max(self.word_error_rate(gt_transcriptions, ds_transcriptions), 0.0), 1.0)
+            cer = min(max(self.character_error_rate(gt_transcriptions, ds_transcriptions), 0.0), 1.0)
 
-            # score = min(max((1 - wer + 1 - cer) / 2.0, 0.0), 1.0)
+            score = min(max((1 - wer + 1 - cer) / 2.0, 0.0), 1.0)
 
-            gt_samples_labels = [gt.get("label", "") for gt in gt_samples_filtered]
-            ds_samples_labels = [ds.get("label", "") for ds in ds_samples_filtered]
+        elif self._task_type == TaskTypes.audio_attribute_annotation:
+            penalty_factor = 0.1
+            def calculate_score(gt_samples, ds_samples):
+                # Group annotations by label
+                gt_by_label = {}
+                for idx, ann in enumerate(gt_samples):
+                    label = ann.get("label", "")
+                    if label not in gt_by_label:
+                        gt_by_label[label] = []
+                    gt_by_label[label].append((idx, ann))
 
-            if not gt_samples_labels:  # Handle empty ground truth
-                if not ds_samples_labels:
-                    score = 1.0
+                ds_by_label = {}
+                for ann in ds_samples:
+                    label = ann.get("label", "")
+                    if label not in ds_by_label:
+                        ds_by_label[label] = []
+                    ds_by_label[label].append(ann)
+
+                total_score = 0
+                total_gt_count = 0
+                unused_predictions = []
+
+                # Process each label separately
+                for label in set(list(gt_by_label.keys()) + list(ds_by_label.keys())):
+                    gt_list = gt_by_label.get(label, [])
+                    ds_list = ds_by_label.get(label, [])
+                    total_gt_count += len(gt_list)
+
+                    # Track best coverage for each GT
+                    gt_coverage = [0.0] * len(gt_list)
+                    used_predictions = [False] * len(ds_list)
+
+                    # Check each GT against all predictions
+                    for gt_idx, (orig_gt_idx, gt_ann) in enumerate(gt_list):
+                        gt_start, gt_end = gt_ann["start"], gt_ann["end"]
+                        gt_length = gt_end - gt_start
+
+                        # Find all overlapping predictions
+                        overlapping_predictions = []
+                        for ds_idx, ds_ann in enumerate(ds_list):
+                            ds_start, ds_end = ds_ann["start"], ds_ann["end"]
+
+                            # Calculate overlap
+                            overlap_start = max(gt_start, ds_start)
+                            overlap_end = min(gt_end, ds_end)
+                            overlap = max(0, overlap_end - overlap_start)
+
+                            if overlap > 0:
+                                overlapping_predictions.append((ds_idx, overlap))
+                                used_predictions[ds_idx] = True
+
+                        # Merge overlaps to calculate total coverage
+                        overlapping_predictions.sort(key=lambda x: x[1], reverse=True)
+                        covered_intervals = []
+
+                        for ds_idx, overlap in overlapping_predictions:
+                            ds_start, ds_end = ds_list[ds_idx]["start"], ds_list[ds_idx]["end"]
+                            overlap_start = max(gt_start, ds_start)
+                            overlap_end = min(gt_end, ds_end)
+
+                            # Check if this interval overlaps with any already covered intervals
+                            new_interval = (overlap_start, overlap_end)
+                            merged = False
+                            for i, (int_start, int_end) in enumerate(covered_intervals):
+                                if not (overlap_end < int_start or overlap_start > int_end):
+                                    # Merge overlapping intervals
+                                    covered_intervals[i] = (min(int_start, overlap_start),
+                                                        max(int_end, overlap_end))
+                                    merged = True
+                                    break
+
+                            if not merged:
+                                covered_intervals.append(new_interval)
+
+                        # Calculate total coverage
+                        total_covered = sum(end - start for start, end in covered_intervals)
+                        coverage_ratio = min(1.0, total_covered / gt_length)
+                        gt_coverage[gt_idx] = coverage_ratio
+
+                    # Add unused predictions for this label to global list
+                    for ds_idx, used in enumerate(used_predictions):
+                        if not used:
+                            unused_predictions.append(ds_list[ds_idx])
+
+                    # Add coverage scores for this label
+                    total_score += sum(gt_coverage)
+
+                # Calculate base score
+                if total_gt_count > 0:
+                    base_score = total_score / total_gt_count
                 else:
-                    score = 0.0
+                    base_score = 0
 
-            # Take only the first len(gt_labels) elements from ds_labels
-            ds_labels_trimmed = ds_samples_labels[:len(gt_samples_labels)]
+                # Apply penalty for extra annotations
+                penalty = len(unused_predictions) * penalty_factor
+                final_score = max(0, base_score - penalty)
 
-            correct_matches = 0
-            for i in range(len(gt_samples_labels)):
-                if i < len(ds_labels_trimmed) and gt_samples_labels[i] == ds_labels_trimmed[i]:
-                    correct_matches += 1
+                # Handle case with no GT annotations
+                if total_gt_count == 0:
+                    final_score = 0 if ds_samples else 1.0
 
-            score = correct_matches / len(gt_samples_labels)
+                return final_score
+
+            score = calculate_score(gt_samples_filtered, ds_samples_filtered)
 
         return score
 
@@ -1111,29 +1197,28 @@ def process_intermediate_results(  # noqa: PLR0912
         for gt_stat in db_service.get_task_gt_stats(session, task.id)
     }
 
-    if manifest.annotation.type == TaskTypes.audio_transcription:
-        job_annotations = {}
-        for job in meta.jobs:
-            job_annotations[job.job_id] = []
+    job_annotations = {}
+    for job in meta.jobs:
+        job_annotations[job.job_id] = []
 
-        validator = _AudinoTaskValidator(
-            escrow_address=escrow_address,
-            chain_id=chain_id,
-            manifest=manifest,
-            merged_annotations=merged_annotations,
-            meta=meta,
-            gt_stats=gt_stats,
-            job_annotations=job_annotations,
-        )
-    else:
-        validator = _TaskValidator(
-            escrow_address=escrow_address,
-            chain_id=chain_id,
-            manifest=manifest,
-            merged_annotations=merged_annotations,
-            meta=unchecked_jobs_meta,
-            gt_stats=gt_stats,
-        )
+    validator = _AudinoTaskValidator(
+        escrow_address=escrow_address,
+        chain_id=chain_id,
+        manifest=manifest,
+        merged_annotations=merged_annotations,
+        meta=meta,
+        gt_stats=gt_stats,
+        job_annotations=job_annotations,
+    )
+    # else:
+    #     validator = _TaskValidator(
+    #         escrow_address=escrow_address,
+    #         chain_id=chain_id,
+    #         manifest=manifest,
+    #         merged_annotations=merged_annotations,
+    #         meta=unchecked_jobs_meta,
+    #         gt_stats=gt_stats,
+    #     )
 
     validation_result = validator.validate()
     job_results = validation_result.job_results
@@ -1158,21 +1243,21 @@ def process_intermediate_results(  # noqa: PLR0912
 
     gt_stats = validation_result.gt_stats
 
-    if rejected_jobs and gt_stats and manifest.annotation.type != TaskTypes.audio_transcription:
-        honeypot_manager = _TaskHoneypotManager(
-            task,
-            manifest,
-            annotation_meta=meta,
-            gt_stats=gt_stats,
-            validation_result=validation_result,
-            logger=logger,
-        )
+    # if rejected_jobs and gt_stats and manifest.annotation.type != TaskTypes.audio_transcription:
+    #     honeypot_manager = _TaskHoneypotManager(
+    #         task,
+    #         manifest,
+    #         annotation_meta=meta,
+    #         gt_stats=gt_stats,
+    #         validation_result=validation_result,
+    #         logger=logger,
+    #     )
 
-        honeypot_update_result = honeypot_manager.update_honeypots()
-        if not honeypot_update_result.can_continue_annotation:
-            should_complete = True
+    #     honeypot_update_result = honeypot_manager.update_honeypots()
+    #     if not honeypot_update_result.can_continue_annotation:
+    #         should_complete = True
 
-        gt_stats = honeypot_update_result.updated_gt_stats
+    #     gt_stats = honeypot_update_result.updated_gt_stats
 
     if gt_stats:
         if logger.isEnabledFor(logging.DEBUG):
