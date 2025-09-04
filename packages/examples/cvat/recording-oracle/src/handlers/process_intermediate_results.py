@@ -721,10 +721,8 @@ class AudinoDatasetComparator:
                 gt_samples_adjusted = []
                 for ann in gt_samples:
                     adjusted_ann = ann.copy()
-                    adjusted_points = adjusted_ann["points"].copy()
-                    adjusted_points[0] = round(adjusted_points[0] - start_time, 10)  # Round to 10 decimal places
-                    adjusted_points[3] = round(adjusted_points[3] - start_time, 10)
-                    adjusted_ann["points"] = adjusted_points
+                    adjusted_ann['start'] = round(ann['start'] - start_time, 10)
+                    adjusted_ann['end'] = round(ann['end'] - start_time, 10)
                     gt_samples_adjusted.append(adjusted_ann)
 
                 # Group annotations by label
