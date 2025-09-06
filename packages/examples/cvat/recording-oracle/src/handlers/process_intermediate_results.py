@@ -508,12 +508,9 @@ class _AudinoTaskValidator:
 
         for idx, (job_cvat_id, job_dataset) in enumerate(self._job_annotations.items()):
             try:
-                if manifest.annotation.type == TaskTypes.audio_attribute_annotation:
-                    job_mean_accuracy = 1.0
-                else:
-                    job_mean_accuracy = comparator.compare(
-                        gt_dataset, job_dataset, offset, (self._time_stamps[2 * idx + 1] / 1000)
-                    )
+                job_mean_accuracy = comparator.compare(
+                    gt_dataset, job_dataset, offset, (self._time_stamps[2 * idx + 1] / 1000)
+                )
 
                 job_results[job_cvat_id] = job_mean_accuracy
 
@@ -828,7 +825,13 @@ class AudinoDatasetComparator:
 
                 return final_score
 
-            score = calculate_score(gt_samples_filtered, ds_samples_filtered, start_time)
+            # score = calculate_score(gt_samples_filtered, ds_samples_filtered, start_time)
+            for ann in ds_dataset:
+                if(ann.get("label") == 'DEFAULT_LABEL'):
+                    score = 0.0
+                    break
+                else:
+                    score = 1.0
 
         return score
 
