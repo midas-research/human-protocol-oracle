@@ -15,12 +15,18 @@ from src.core.types import (
     ProjectStatuses,
     RecordingOracleEventTypes,
     TaskStatuses,
+    TaskTypes,
+    Networks,
+    JobLauncherEventTypes,
+    OracleWebhookStatuses
 )
 from src.crons._cron_job import cron_job
 from src.crons.webhooks._common import handle_webhook, process_outgoing_webhooks
 from src.db.utils import ForUpdateParams
 from src.models.webhook import Webhook
-
+from src.utils.assignments import parse_manifest
+from src.chain.escrow import get_escrow_manifest
+from src.handlers.escrow_cleanup import cleanup_escrow
 
 @cron_job
 def process_incoming_recording_oracle_webhooks(logger: logging.Logger, session: Session):
@@ -203,6 +209,68 @@ def handle_recording_oracle_event(webhook: Webhook, *, db_session: Session, logg
                 webhook.chain_id,
                 status=EscrowValidationStatuses.completed,
             )
+
+        case RecordingOracleEventTypes.project_relaunched:
+            job_launcher_pending_webhook = oracle_db_service.inbox.get_pending_webhook(
+                db_session,
+                OracleWebhookTypes.job_launcher,
+                escrow_address=webhook.escrow_address,
+                event_type=JobLauncherEventTypes.escrow_created,
+                status=OracleWebhookStatuses.pending,
+            )
+            if job_launcher_pending_webhook:
+                logger.error(
+                    f"Received a relaunch event for "
+                    f"escrow_address {webhook.escrow_address}. "
+                    "job launcher webhook is in pending state, ignoring the event."
+                )
+                return
+
+            manifest = parse_manifest(get_escrow_manifest(webhook.chain_id, webhook.escrow_address))
+
+            if not manifest:
+                logger.error(
+                    "Failed to parse manifest for escrow {} (chain_id={})".format(
+                        webhook.escrow_address,
+                        webhook.chain_id,
+                    )
+                )
+                return
+
+            if manifest.annotation.type == TaskTypes.audio_attribute_annotation:
+                projects = cvat_db_service.get_projects_by_escrow_address(
+                    db_session, webhook.escrow_address
+                )
+
+                cleanup_escrow(webhook.escrow_address, Networks(webhook.chain_id), projects)
+                cvat_db_service.delete_projects(
+                    db_session, webhook.escrow_address, webhook.chain_id
+                )
+                # TODO: delete escrow validation and creation records too
+                cvat_db_service.delete_escrow_creation(
+                    db_session,
+                    webhook.escrow_address,
+                    webhook.chain_id,
+                )
+                cvat_db_service.delete_escrow_validation(
+                    db_session,
+                    webhook.escrow_address,
+                    webhook.chain_id,
+                )
+
+                # again create a new project for the relaunched escrow
+                job_launcher_completed_webhook = oracle_db_service.inbox.get_pending_webhook(
+                    db_session,
+                    OracleWebhookTypes.job_launcher,
+                    escrow_address=webhook.escrow_address,
+                    event_type=JobLauncherEventTypes.escrow_created,
+                    status=OracleWebhookStatuses.completed,
+                )
+                oracle_db_service.inbox.update_webhook_status(
+                    db_session,
+                    job_launcher_completed_webhook.id,
+                    OracleWebhookStatuses.pending,
+                )
 
         case _:
             raise AssertionError(f"Unknown recording oracle event {webhook.event_type}")

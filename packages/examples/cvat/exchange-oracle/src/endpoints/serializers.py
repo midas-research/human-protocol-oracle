@@ -7,10 +7,12 @@ from sqlalchemy.orm import Session
 import src.services.cvat as cvat_service
 from src.chain.escrow import get_escrow_manifest, get_escrow_fund_amount
 from src.core.manifest import TaskManifest
-from src.core.types import AssignmentStatuses, ProjectStatuses
+from src.core.types import AssignmentStatuses, ProjectStatuses, TaskTypes
 from src.db import SessionLocal
 from src.schemas import exchange as service_api
 from src.utils.assignments import compose_assignment_url, parse_manifest
+from src.core.config import Config
+
 
 PROJECT_COMPLETED_STATUSES = {
     ProjectStatuses.recorded,
@@ -45,6 +47,12 @@ def serialize_job(
 
         jobs = cvat_service.get_jobs_by_cvat_project_id(session, project.cvat_id)
         fund_amount = get_escrow_fund_amount(project.chain_id, project.escrow_address)
+        relaunch = Config.cvat_config.relaunch_times
+        reward_amount = None
+        if project.job_type == TaskTypes.audio_attribute_annotation and relaunch > 0:
+            reward_amount = f"{fund_amount / (len(jobs) * relaunch)}" if len(jobs) else None
+        else:
+            reward_amount = f"{fund_amount / len(jobs)}" if len(jobs) else None
 
         if project.status == ProjectStatuses.canceled:
             api_status = service_api.JobStatuses.canceled
@@ -61,7 +69,7 @@ def serialize_job(
             job_type=project.job_type,
             status=api_status,
             job_description=manifest.annotation.description if manifest else None,
-            reward_amount=f"{fund_amount / len(jobs)}" if len(jobs) else None,
+            reward_amount=reward_amount,
             reward_token=(
                 service_api.DEFAULT_TOKEN
             ),  # set a value to avoid being excluded by response_model_exclude_unset=True
@@ -116,6 +124,12 @@ def serialize_assignment(
 
         jobs = cvat_service.get_jobs_by_cvat_project_id(session, project.cvat_id)
         fund_amount = get_escrow_fund_amount(project.chain_id, project.escrow_address)
+        relaunch = Config.cvat_config.relaunch_times
+        reward_amount = None
+        if project.job_type == TaskTypes.audio_attribute_annotation and relaunch > 0:
+            reward_amount = f"{fund_amount / (len(jobs) * relaunch)}" if len(jobs) else None
+        else:
+            reward_amount = f"{fund_amount / len(jobs)}" if len(jobs) else None
 
         assignment_status_mapping = {
             AssignmentStatuses.created: service_api.AssignmentStatuses.active,
@@ -138,7 +152,7 @@ def serialize_assignment(
             chain_id=project.chain_id,
             job_type=project.job_type,
             status=api_status,
-            reward_amount=f"{fund_amount / len(jobs)}" if len(jobs) else None,
+            reward_amount=reward_amount,
             reward_token=(
                 service_api.DEFAULT_TOKEN
             ),  # set a value to avoid being excluded by response_model_exclude_unset=True

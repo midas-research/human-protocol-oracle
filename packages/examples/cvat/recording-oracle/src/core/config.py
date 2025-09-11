@@ -231,6 +231,8 @@ class CvatConfig:
     admin_login = getenv("CVAT_ADMIN", "admin")
     admin_pass = getenv("CVAT_ADMIN_PASS", "admin")
     org_slug = getenv("CVAT_ORG_SLUG", "org1")
+    relaunch_times = int(getenv("PROJECT_RELAUNCH_TIMES", 0))
+
 
     quality_retrieval_timeout = int(getenv("CVAT_QUALITY_RETRIEVAL_TIMEOUT", 60 * 60))
     quality_check_interval = int(getenv("CVAT_QUALITY_CHECK_INTERVAL", 5))

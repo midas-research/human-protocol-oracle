@@ -106,10 +106,33 @@ class OracleWebhookQueue:
             .all()
         )
 
+    def get_pending_webhook(
+        self,
+        session: Session,
+        type: OracleWebhookTypes,
+        escrow_address: str,
+        event_type: str,
+        status: OracleWebhookStatuses = OracleWebhookStatuses.pending,
+        *,
+        for_update: bool | ForUpdateParams = False,
+    ) -> Webhook | None:
+        return (
+            _maybe_for_update(session.query(Webhook), enable=for_update)
+            .where(
+                Webhook.direction == self.direction.value,
+                Webhook.type == type.value,
+                Webhook.escrow_address == escrow_address,
+                Webhook.event_type == event_type,
+                Webhook.status == status.value,
+                Webhook.wait_until <= utcnow(),
+            )
+            .first()
+        )
+
     def update_webhook_status(
-        self, session: Session, webhook_id: str, status: OracleWebhookStatuses
+        self, session: Session, webhook_id: str, status: OracleWebhookStatuses, attempts: int = 0
     ) -> None:
-        upd = update(Webhook).where(Webhook.id == webhook_id).values(status=status.value)
+        upd = update(Webhook).where(Webhook.id == webhook_id).values(status=status.value, attempts=attempts)
         session.execute(upd)
 
     def handle_webhook_success(self, session: Session, webhook_id: str) -> None:

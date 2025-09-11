@@ -139,6 +139,19 @@ class OracleWebhookQueue:
         )
         session.execute(upd)
 
+    def get_job_finished_webhooks_by_escrow(
+        self, session: Session, escrow_address: str, chain_id: int
+    ) -> list[Webhook]:
+        return (
+            session.query(Webhook)
+            .where(
+                Webhook.escrow_address == escrow_address,
+                Webhook.chain_id == chain_id,
+                Webhook.type == OracleWebhookTypes.exchange_oracle.value,
+                Webhook.event_type == "project_relaunched",
+            )
+            .all()
+        )
 
 inbox = OracleWebhookQueue(direction=OracleWebhookDirectionTags.incoming)
 outbox = OracleWebhookQueue(

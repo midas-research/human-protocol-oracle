@@ -500,6 +500,22 @@ def finish_escrow_creations_by_escrow_address(
     )
     session.execute(statement)
 
+def update_escrow_creation(session: Session, escrow_address: str, chain_id: int, total_jobs: int) -> None:
+    stmt = (
+        update(EscrowCreation)
+        .where(
+            EscrowCreation.escrow_address == escrow_address, EscrowCreation.chain_id == chain_id
+        )
+        .values(total_jobs=total_jobs)
+    )
+    session.execute(stmt)
+
+def delete_escrow_creation(session: Session, escrow_address: str, chain_id: int) -> None:
+    statement = (
+        delete(EscrowCreation)
+        .where(EscrowCreation.escrow_address == escrow_address, EscrowCreation.chain_id == chain_id)
+    )
+    session.execute(statement)
 
 # EscrowValidation
 
@@ -550,6 +566,15 @@ def get_escrow_validation_by_escrow_address(
         .limit(1)
     )
     return session.scalar(stmt)
+
+def delete_escrow_validation(session: Session, escrow_address: str, chain_id: int) -> None:
+    stmt = (
+        delete(EscrowValidation)
+        .where(
+            EscrowValidation.escrow_address == escrow_address, EscrowValidation.chain_id == chain_id
+        )
+    )
+    session.execute(stmt)
 
 
 # Task

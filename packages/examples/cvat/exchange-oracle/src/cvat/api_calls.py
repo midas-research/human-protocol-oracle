@@ -293,7 +293,7 @@ def get_project_labels(cvat_project_id: int) -> list[models.Label]:
     logger = logging.getLogger("app")
     with get_api_client() as api_client:
         try:
-            (labels, _) = api_client.labels_api.list(project_id=cvat_project_id)
+            (labels, _) = api_client.labels_api.list(project_id=cvat_project_id, page_size=25)
             return labels["results"]
 
         except exceptions.ApiException as e:
@@ -649,6 +649,9 @@ def clear_job_annotations(job_id: int) -> None:
 
     with get_api_client() as api_client:
         try:
+            (labels, _) = api_client.labels_api.list(job_id=job_id)
+            default_label = labels['results'][0]
+
             (response, _) = api_client.jobs_api.retrieve_annotations(job_id)
             updated_shapes = []
             for shape in response.get("shapes", []):
@@ -658,13 +661,13 @@ def clear_job_annotations(job_id: int) -> None:
                         spec_id=attr["spec_id"],
                         value=attr["value"]
                     )
-                    for attr in shape["attributes"]
+                    for attr in default_label["attributes"]
                 ]
                 updated_shapes.append(models.LabeledShapeRequest(
                     id=shape["id"],
                     type=shape["type"],
                     points=shape["points"],
-                    label_id=shape["label_id"],
+                    label_id=default_label["id"],
                     attributes=attributes,
                     frame=shape["frame"],
                 ))

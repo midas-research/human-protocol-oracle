@@ -28,6 +28,9 @@ class JobLauncherEvent_EscrowCanceled(OracleEvent):
 class RecordingOracleEvent_JobCompleted(OracleEvent):
     pass  # escrow is enough for now
 
+class RecordingOracleEvent_ProjectRelaunched(OracleEvent):
+    pass  # escrow is enough for now
+
 
 class RecordingOracleEvent_SubmissionRejected(OracleEvent):
     class RejectedAssignmentInfo(BaseModel):
@@ -60,6 +63,7 @@ _event_type_map = {
     JobLauncherEventTypes.escrow_canceled: JobLauncherEvent_EscrowCanceled,
     RecordingOracleEventTypes.job_completed: RecordingOracleEvent_JobCompleted,
     RecordingOracleEventTypes.submission_rejected: RecordingOracleEvent_SubmissionRejected,
+    RecordingOracleEventTypes.project_relaunched: RecordingOracleEvent_ProjectRelaunched,
     ExchangeOracleEventTypes.job_creation_failed: ExchangeOracleEvent_JobCreationFailed,
     ExchangeOracleEventTypes.job_finished: ExchangeOracleEvent_JobFinished,
     ExchangeOracleEventTypes.escrow_cleaned: ExchangeOracleEvent_EscrowCleaned,

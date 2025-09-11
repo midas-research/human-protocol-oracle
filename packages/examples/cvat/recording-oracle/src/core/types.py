@@ -42,3 +42,5 @@ class ExchangeOracleEventTypes(str, Enum, metaclass=BetterEnumMeta):
 class RecordingOracleEventTypes(str, Enum, metaclass=BetterEnumMeta):
     job_completed = "job_completed"
     submission_rejected = "submission_rejected"
+    project_relaunched = "project_relaunched"
+

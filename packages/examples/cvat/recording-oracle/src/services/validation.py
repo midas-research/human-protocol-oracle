@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import func, update
+from sqlalchemy import func, update, delete
 from sqlalchemy.orm import Session
 
 from src.core.gt_stats import GtKey, ValidationFrameStats
@@ -17,6 +17,14 @@ def create_task(session: Session, escrow_address: str, chain_id: int) -> str:
     session.add(obj)
 
     return obj_id
+
+def delete_task(session: Session, task_id: str) -> None:
+    expression = (
+        delete(Task)
+        .where(Task.id == task_id)
+    )
+
+    session.execute(expression)
 
 
 def get_task_by_escrow_address(

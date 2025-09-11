@@ -23,6 +23,9 @@ class RecordingOracleEvent_SubmissionRejected(OracleEvent):
     # no task_id, escrow is enough for now
     assignments: list[RejectedAssignmentInfo]
 
+class RecordingOracleEvent_ProjectRelaunched(OracleEvent):
+    pass
+
 
 class ExchangeOracleEvent_JobCreationFailed(OracleEvent):
     # no task_id, escrow is enough for now
@@ -40,6 +43,7 @@ class ExchangeOracleEvent_EscrowCleaned(OracleEvent):
 _event_type_map = {
     RecordingOracleEventTypes.job_completed: RecordingOracleEvent_JobCompleted,
     RecordingOracleEventTypes.submission_rejected: RecordingOracleEvent_SubmissionRejected,
+    RecordingOracleEventTypes.project_relaunched: RecordingOracleEvent_ProjectRelaunched,
     ExchangeOracleEventTypes.job_creation_failed: ExchangeOracleEvent_JobCreationFailed,
     ExchangeOracleEventTypes.job_finished: ExchangeOracleEvent_JobFinished,
     ExchangeOracleEventTypes.escrow_cleaned: ExchangeOracleEvent_EscrowCleaned,
