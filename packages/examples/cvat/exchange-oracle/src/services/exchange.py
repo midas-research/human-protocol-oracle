@@ -2,14 +2,13 @@ from datetime import timedelta
 
 import src.cvat.api_calls as cvat_api
 import src.services.cvat as cvat_service
+from src.chain.escrow import get_escrow_manifest
 from src.core.types import Networks, ProjectStatuses, TaskTypes
 from src.db import SessionLocal
 from src.models.cvat import Job
-from src.utils.assignments import get_default_assignment_timeout
+from src.utils.assignments import get_default_assignment_timeout, parse_manifest
 from src.utils.requests import get_or_404
 from src.utils.time import utcnow
-from src.chain.escrow import get_escrow_manifest
-from src.utils.assignments import parse_manifest
 
 
 class UserHasUnfinishedAssignmentError(Exception):
@@ -24,7 +23,9 @@ class UserHasNoQualificationsError(Exception):
         return "The user does not have the required qualifications for this job."
 
 
-def create_assignment(escrow_address: str, chain_id: Networks, wallet_address: str, qualifications: list[str]) -> str | None:  # noqa: ARG001 (don't we want to use chain_id for filter?)
+def create_assignment(
+    escrow_address: str, chain_id: Networks, wallet_address: str, qualifications: list[str]
+) -> str | None:
     with SessionLocal.begin() as session:
         user = get_or_404(
             cvat_service.get_user_by_id(session, wallet_address, for_update=True),
@@ -124,9 +125,7 @@ async def resign_assignment(assignment_id: str, wallet_address: str) -> None:
             raise NoAccessError
 
         cvat_service.cancel_assignment(session, assignment_id)
-        cvat_api.update_job_assignee(
-            assignment.cvat_job_id, assignee_id=None
-        )
+        cvat_api.update_job_assignee(assignment.cvat_job_id, assignee_id=None)
 
         job = assignment.job
         cvat_service.touch(session, Job, [job.id])  # project|task rows are locked for update

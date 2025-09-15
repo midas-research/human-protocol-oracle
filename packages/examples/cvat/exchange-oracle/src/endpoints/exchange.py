@@ -20,8 +20,8 @@ from src.db import engine as db_engine
 from src.endpoints.authentication import (
     AuthorizationData,
     AuthorizationParam,
-    JobListAuthorizationData,
     CreateAssignmentAuthorizationData,
+    JobListAuthorizationData,
     make_auth_dependency,
 )
 from src.endpoints.filtering import Filter, FilterDepends, OrderingDirection
@@ -392,7 +392,9 @@ async def list_assignments(
 )
 async def create_assignment(
     data: AssignmentRequest,
-    token: Annotated[CreateAssignmentAuthorizationData, make_auth_dependency(CreateAssignmentAuthorizationData)],
+    token: Annotated[
+        CreateAssignmentAuthorizationData, make_auth_dependency(CreateAssignmentAuthorizationData)
+    ],
 ) -> AssignmentResponse:
     try:
         assignment_id = oracle_service.create_assignment(
