@@ -21,6 +21,7 @@ from src.endpoints.authentication import (
     AuthorizationData,
     AuthorizationParam,
     JobListAuthorizationData,
+    CreateAssignmentAuthorizationData,
     make_auth_dependency,
 )
 from src.endpoints.filtering import Filter, FilterDepends, OrderingDirection
@@ -390,13 +391,15 @@ async def list_assignments(
     description="Start an assignment within the task for the annotator",
 )
 async def create_assignment(
-    data: AssignmentRequest, token: Annotated[AuthorizationData, AuthorizationParam]
+    data: AssignmentRequest,
+    token: Annotated[CreateAssignmentAuthorizationData, make_auth_dependency(CreateAssignmentAuthorizationData)],
 ) -> AssignmentResponse:
     try:
         assignment_id = oracle_service.create_assignment(
             escrow_address=data.escrow_address,
             chain_id=data.chain_id,
             wallet_address=token.wallet_address,
+            qualifications=token.qualifications,
         )
     except oracle_service.UserHasUnfinishedAssignmentError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
