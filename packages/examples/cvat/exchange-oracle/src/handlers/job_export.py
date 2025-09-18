@@ -33,6 +33,7 @@ CVAT_EXPORT_FORMAT_MAPPING = {
     TaskTypes.image_boxes_from_points: "COCO 1.0",
     TaskTypes.image_skeletons_from_boxes: "CVAT for images 1.1",
     TaskTypes.audio_transcription: "Audino Format",
+    TaskTypes.audio_attribute_annotation: "Audino Format",
 }
 
 CVAT_EXPORT_FORMAT_TO_DM_MAPPING = {
@@ -648,6 +649,7 @@ def postprocess_annotations(
         TaskTypes.image_boxes_from_points: _BoxesFromPointsTaskProcessor,
         TaskTypes.image_skeletons_from_boxes: _SkeletonsFromBoxesTaskProcessor,
         TaskTypes.audio_transcription: _AudioTaskProcessor,
+        TaskTypes.audio_attribute_annotation: _AudioTaskProcessor,
     }
 
     task_type = manifest.annotation.type

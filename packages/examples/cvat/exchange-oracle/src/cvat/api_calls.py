@@ -649,10 +649,30 @@ def clear_job_annotations(job_id: int) -> None:
 
     with get_api_client() as api_client:
         try:
+            (response, _) = api_client.jobs_api.retrieve_annotations(job_id)
+            updated_shapes = []
+            for shape in response.get("shapes", []):
+                shape["transcript"] = ''
+                attributes = [
+                    models.AttributeValRequest(
+                        spec_id=attr["spec_id"],
+                        value=attr["value"]
+                    )
+                    for attr in shape["attributes"]
+                ]
+                updated_shapes.append(models.LabeledShapeRequest(
+                    id=shape["id"],
+                    type=shape["type"],
+                    points=shape["points"],
+                    label_id=shape["label_id"],
+                    attributes=attributes,
+                    frame=shape["frame"],
+                ))
+
             api_client.jobs_api.update_annotations(
                 id=job_id,
                 job_annotations_update_request=models.JobAnnotationsUpdateRequest(
-                    tags=[], shapes=[], tracks=[]
+                    tags=[], shapes=updated_shapes, tracks=[]
                 ),
             )
         except exceptions.ApiException as e:

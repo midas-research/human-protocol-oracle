@@ -59,6 +59,7 @@ LABEL_TYPE_MAPPING = {
     TaskTypes.image_boxes_from_points: CvatLabelTypes.rectangle,
     TaskTypes.image_skeletons_from_boxes: CvatLabelTypes.points,
     TaskTypes.audio_transcription: CvatLabelTypes.rectangle,
+    TaskTypes.audio_attribute_annotation: CvatLabelTypes.rectangle,
 }
 
 DM_DATASET_FORMAT_MAPPING = {
@@ -69,6 +70,7 @@ DM_DATASET_FORMAT_MAPPING = {
     TaskTypes.image_boxes_from_points: "coco_instances",
     TaskTypes.image_skeletons_from_boxes: "coco_person_keypoints",
     TaskTypes.audio_transcription: "audino",
+    TaskTypes.audio_attribute_annotation: "audino",
 }
 
 DM_GT_DATASET_FORMAT_MAPPING = {
@@ -3024,7 +3026,7 @@ class AudinoTaskBuilder:
             #     escrow_address,
             #     total_jobs,
             # )
-            escrow_creation_id = db_service.create_escrow_creation(
+            db_service.create_escrow_creation(
                 session, escrow_address=escrow_address, chain_id=chain_id, total_jobs=1
             )
 
@@ -3149,7 +3151,7 @@ def create_task(escrow_address: str, chain_id: int) -> None:
         builder_type = BoxesFromPointsTaskBuilder
     elif manifest.annotation.type in [TaskTypes.image_skeletons_from_boxes]:
         builder_type = SkeletonsFromBoxesTaskBuilder
-    elif manifest.annotation.type in [TaskTypes.audio_transcription]:
+    elif manifest.annotation.type in [TaskTypes.audio_transcription, TaskTypes.audio_attribute_annotation]:
         builder_type = AudinoTaskBuilder
     else:
         raise Exception(f"Unsupported task type {manifest.annotation.type}")

@@ -46,9 +46,11 @@ class TaskTypes(str, Enum, metaclass=BetterEnumMeta):
     image_skeletons_from_boxes = "image_skeletons_from_boxes"
     image_polygons = "image_polygons"
     audio_transcription = "audio_transcription"
+    audio_attribute_annotation = "audio_attribute_annotation"
 
 class AudinoTaskTypes(str, Enum):
     audio_transcription = ["is_start", "is_end", "is_transcription"]
+    audio_attribute_annotation= ["is_start", "is_end"]
 
 
 class CvatLabelTypes(str, Enum, metaclass=BetterEnumMeta):
