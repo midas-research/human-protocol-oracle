@@ -5,10 +5,10 @@ import src.services.cvat as cvat_service
 from src.core.types import Networks, ProjectStatuses, TaskTypes
 from src.db import SessionLocal
 from src.models.cvat import Job
-from src.utils.assignments import get_default_assignment_timeout
+from src.utils.assignments import get_default_assignment_timeout, parse_manifest
 from src.utils.requests import get_or_404
 from src.utils.time import utcnow
-
+from src.chain.escrow import get_escrow_manifest
 
 class UserHasUnfinishedAssignmentError(Exception):
     def __str__(self) -> str:
@@ -17,8 +17,11 @@ class UserHasUnfinishedAssignmentError(Exception):
             "Please complete or resign them first."
         )
 
+class UserQualificationError(Exception):
+    def __str__(self) -> str:
+        return "User doesn't have required qualifications."
 
-def create_assignment(escrow_address: str, chain_id: Networks, wallet_address: str) -> str | None:  # noqa: ARG001 (don't we want to use chain_id for filter?)
+def create_assignment(escrow_address: str, chain_id: Networks, wallet_address: str, qualifications: list[str]) -> str | None:
     with SessionLocal.begin() as session:
         user = get_or_404(
             cvat_service.get_user_by_id(session, wallet_address, for_update=True),
@@ -66,6 +69,13 @@ def create_assignment(escrow_address: str, chain_id: Networks, wallet_address: s
         )
         if not unassigned_job:
             return None
+
+        manifest = parse_manifest(get_escrow_manifest(chain_id, escrow_address))
+        job_qualifications = set(manifest.qualifications)
+        user_qualifications = set(qualifications)
+
+        if not job_qualifications.issubset(user_qualifications):
+            raise UserQualificationError
 
         assignment_id = cvat_service.create_assignment(
             session,
