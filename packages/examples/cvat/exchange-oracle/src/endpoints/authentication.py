@@ -1,4 +1,4 @@
-from typing import Annotated, Any, TypeVar, List
+from typing import Annotated, Any, TypeVar
 
 import jwt
 import pydantic
@@ -52,10 +52,6 @@ class JobListAuthorizationData(AuthorizationData):
 
         return self
 
-class CreateAssignmentAuthorizationData(AuthorizationData):
-    wallet_address: str
-    email: str
-    qualifications: List[str] = []
 
 class TokenAuthenticator:
     def __init__(self, *, auth_data_class: AuthDataT = AuthorizationData) -> None:
