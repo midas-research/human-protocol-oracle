@@ -293,7 +293,7 @@ def get_project_labels(cvat_project_id: int) -> list[models.Label]:
     logger = logging.getLogger("app")
     with get_api_client() as api_client:
         try:
-            (labels, _) = api_client.labels_api.list(project_id=cvat_project_id)
+            (labels, _) = api_client.labels_api.list(project_id=cvat_project_id, page_size=25)
             return labels["results"]
 
         except exceptions.ApiException as e:
