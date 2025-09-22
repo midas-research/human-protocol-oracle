@@ -71,7 +71,7 @@ def create_assignment(escrow_address: str, chain_id: Networks, wallet_address: s
             return None
 
         manifest = parse_manifest(get_escrow_manifest(chain_id, escrow_address))
-        job_qualifications = set(manifest.qualifications)
+        job_qualifications = set(manifest.annotation.qualifications)
         user_qualifications = set(qualifications)
 
         if not job_qualifications.issubset(user_qualifications):

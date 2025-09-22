@@ -139,6 +139,9 @@ class AnnotationInfo(BaseModel):
     segment_duration: int = 60000
     "Segment duration of a job (audio length)"
 
+    qualifications: list[str] = Field(default_factory=list)
+    "A list of annotator qualifications required for participation"
+
     @model_validator(mode="before")
     @classmethod
     def validate_label_type(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -176,12 +179,6 @@ class TaskManifest(BaseModel):
     data: DataInfo
     annotation: AnnotationInfo
     validation: ValidationInfo
-
-    # job_bounty: Decimal = Field(ge=0)
-    # "Assignment bounty, a decimal value in HMT"
-
-    qualifications: list[str] = Field(default_factory=list)
-    "A list of annotator qualifications required for participation"
 
 
 def parse_manifest(manifest: Any) -> TaskManifest:
