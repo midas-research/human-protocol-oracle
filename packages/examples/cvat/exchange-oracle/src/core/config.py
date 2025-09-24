@@ -234,6 +234,9 @@ class FeaturesConfig:
     manifest_cache_ttl = int(os.getenv("MANIFEST_CACHE_TTL", str(2 * 24 * 60 * 60)))
     "TTL for cached manifests"
 
+    token_symbol_ttl = int(getenv("TOKEN_SYMBOL_CACHE_TTL", str(2 * 24 * 60 * 60)))
+    "TTL for cached token symbols"
+
 
 class CoreConfig:
     default_assignment_time = int(getenv("DEFAULT_ASSIGNMENT_TIME", 1800))

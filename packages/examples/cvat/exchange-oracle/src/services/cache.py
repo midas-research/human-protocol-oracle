@@ -105,3 +105,10 @@ class Cache:
         kwargs.setdefault("ttl", Config.features.manifest_cache_ttl)
         key = self._make_key(escrow_address, chain_id)
         return self._get_or_set(key, set_callback=set_callback, **kwargs)
+
+    def get_or_set_token_symbol(
+        self, chain_id: int, token_address: str, *, set_callback: Callable[[], str], **kwargs
+    ) -> str:
+        kwargs.setdefault("ttl", Config.features.token_symbol_ttl)
+        key = self._make_key(token_address, chain_id)
+        return self._get_or_set(key, set_callback=set_callback, **kwargs)
