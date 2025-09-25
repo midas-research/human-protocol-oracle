@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
-from src.core.types import ExchangeOracleEventTypes, OracleWebhookTypes, RecordingOracleEventTypes
+from src.core.types import ExchangeOracleEventTypes, OracleWebhookTypes, RecordingOracleEventTypes, JobLauncherEventTypes
 
-EventTypeTag = ExchangeOracleEventTypes | RecordingOracleEventTypes
+EventTypeTag = ExchangeOracleEventTypes | RecordingOracleEventTypes | JobLauncherEventTypes
 
 
 class OracleEvent(BaseModel):
@@ -39,6 +39,9 @@ class ExchangeOracleEvent_JobFinished(OracleEvent):
 class ExchangeOracleEvent_EscrowCleaned(OracleEvent):
     pass
 
+class JobLauncherEvent_JobCancelled(OracleEvent):
+    pass  # escrow is enough for now
+
 
 _event_type_map = {
     RecordingOracleEventTypes.job_completed: RecordingOracleEvent_JobCompleted,
@@ -46,6 +49,7 @@ _event_type_map = {
     ExchangeOracleEventTypes.job_creation_failed: ExchangeOracleEvent_JobCreationFailed,
     ExchangeOracleEventTypes.job_finished: ExchangeOracleEvent_JobFinished,
     ExchangeOracleEventTypes.escrow_cleaned: ExchangeOracleEvent_EscrowCleaned,
+    JobLauncherEventTypes.cancellation_requested: JobLauncherEvent_JobCancelled,
 }
 
 
@@ -73,6 +77,7 @@ def parse_event(
     sender_events_mapping = {
         OracleWebhookTypes.recording_oracle: RecordingOracleEventTypes,
         OracleWebhookTypes.exchange_oracle: ExchangeOracleEventTypes,
+        OracleWebhookTypes.job_launcher: JobLauncherEventTypes,
     }
 
     sender_events = sender_events_mapping.get(sender)

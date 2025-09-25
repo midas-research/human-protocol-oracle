@@ -21,7 +21,7 @@ class JobLauncherEvent_EscrowCreated(OracleEvent):
     pass  # escrow is enough
 
 
-class JobLauncherEvent_EscrowCanceled(OracleEvent):
+class JobLauncherEvent_EscrowCanceledRequested(OracleEvent):
     pass  # escrow is enough
 
 
@@ -54,16 +54,20 @@ class ExchangeOracleEvent_EscrowCleaned(OracleEvent):
 class ReputationOracleEvent_EscrowCompleted(OracleEvent):
     pass
 
+class ReputationOracleEvent_EscrowCanceled(OracleEvent):
+    pass  # no data
+
 
 _event_type_map = {
     JobLauncherEventTypes.escrow_created: JobLauncherEvent_EscrowCreated,
-    JobLauncherEventTypes.escrow_canceled: JobLauncherEvent_EscrowCanceled,
+    JobLauncherEventTypes.cancellation_requested: JobLauncherEvent_EscrowCanceledRequested,
     RecordingOracleEventTypes.job_completed: RecordingOracleEvent_JobCompleted,
     RecordingOracleEventTypes.submission_rejected: RecordingOracleEvent_SubmissionRejected,
     ExchangeOracleEventTypes.job_creation_failed: ExchangeOracleEvent_JobCreationFailed,
     ExchangeOracleEventTypes.job_finished: ExchangeOracleEvent_JobFinished,
     ExchangeOracleEventTypes.escrow_cleaned: ExchangeOracleEvent_EscrowCleaned,
     ReputationOracleEventTypes.escrow_completed: ReputationOracleEvent_EscrowCompleted,
+    ReputationOracleEventTypes.escrow_canceled: ReputationOracleEvent_EscrowCanceled,
 }
 
 
