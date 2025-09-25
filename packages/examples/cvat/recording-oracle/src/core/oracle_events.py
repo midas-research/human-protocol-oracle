@@ -14,6 +14,9 @@ class OracleEvent(BaseModel):
 class RecordingOracleEvent_JobCompleted(OracleEvent):
     pass  # escrow is enough for now
 
+class RecordingOracleEvent_JobCancelled(OracleEvent):
+    pass  # escrow is enough for now
+
 
 class RecordingOracleEvent_SubmissionRejected(OracleEvent):
     class RejectedAssignmentInfo(BaseModel):

@@ -58,11 +58,17 @@ def get_escrow_manifest(chain_id: int, escrow_address: str) -> dict:
     return json.loads(manifest_content)
 
 
-def store_results(chain_id: int, escrow_address: str, url: str, hash: str) -> None:
+def store_results(chain_id: int, escrow_address: str, url: str, hash: str, funds_to_reserve: int = 0) -> None:
     web3 = get_web3(chain_id)
     escrow_client = EscrowClient(web3)
 
-    escrow_client.store_results(escrow_address, url, hash)
+    try:
+        escrow_client.store_results(escrow_address, url, hash)
+    except Exception as e:
+        if "DEPRECATED_SIGNATURE" in str(e) or "ErrorStoreResultsVersion" in str(e):
+            escrow_client.store_results(escrow_address, url, hash, funds_to_reserve)
+        else:
+            raise e
 
 
 def get_available_webhook_types(

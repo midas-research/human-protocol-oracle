@@ -14,6 +14,7 @@ from src.core.manifest import TaskManifest, parse_manifest
 from src.core.oracle_events import (
     RecordingOracleEvent_JobCompleted,
     RecordingOracleEvent_SubmissionRejected,
+    RecordingOracleEvent_JobCancelled
 )
 from src.core.storage import (
     compose_results_bucket_filename as compose_annotation_results_bucket_filename,
@@ -37,12 +38,13 @@ module_logger_name = f"{ROOT_LOGGER_NAME}.cron.webhook"
 
 class _TaskValidator:
     def __init__(
-        self, escrow_address: str, chain_id: int, manifest: TaskManifest, db_session: Session
+        self, escrow_address: str, chain_id: int, manifest: TaskManifest, db_session: Session, is_cancellation_flow: bool = False
     ) -> None:
         self.escrow_address = escrow_address
         self.chain_id = chain_id
         self.manifest = manifest
         self.db_session = db_session
+        self.is_cancellation_flow = is_cancellation_flow
         self.logger: Logger = NullLogger()
 
         self.data_bucket = BucketAccessInfo.parse_obj(Config.exchange_oracle_storage_config)
@@ -52,6 +54,26 @@ class _TaskValidator:
 
     def set_logger(self, logger: Logger):
         self.logger = logger
+
+    def check_file_existence(self) -> bool:
+        data_bucket_client = make_cloud_client(self.data_bucket)
+
+        annotation_meta_file_path = compose_annotation_results_bucket_filename(
+            self.escrow_address,
+            self.chain_id,
+            annotation.ANNOTATION_RESULTS_METAFILE_NAME,
+        )
+
+        resulting_annotations_file_path = compose_annotation_results_bucket_filename(
+            self.escrow_address,
+            self.chain_id,
+            annotation.RESULTING_ANNOTATIONS_FILE,
+        )
+
+        # if both files exist, return True else False
+        return data_bucket_client.file_exists(annotation_meta_file_path) and data_bucket_client.file_exists(
+            resulting_annotations_file_path
+        )
 
     def _download_results_meta(self):
         data_bucket_client = make_cloud_client(self.data_bucket)
@@ -153,20 +175,30 @@ class _TaskValidator:
                 compute_resulting_annotations_hash(validation_result.resulting_annotations),
             )
 
-            oracle_db_service.outbox.create_webhook(
-                db_session,
-                escrow_address,
-                chain_id,
-                OracleWebhookTypes.reputation_oracle,
-                event=RecordingOracleEvent_JobCompleted(),
-            )
-            oracle_db_service.outbox.create_webhook(
-                db_session,
-                escrow_address,
-                chain_id,
-                OracleWebhookTypes.exchange_oracle,
-                event=RecordingOracleEvent_JobCompleted(),
-            )
+            if self.is_cancellation_flow:
+                oracle_db_service.outbox.create_webhook(
+                    db_session,
+                    escrow_address,
+                    chain_id,
+                    OracleWebhookTypes.reputation_oracle,
+                    event=RecordingOracleEvent_JobCancelled(),
+                )
+            else:
+                oracle_db_service.outbox.create_webhook(
+                    db_session,
+                    escrow_address,
+                    chain_id,
+                    OracleWebhookTypes.reputation_oracle,
+                    event=RecordingOracleEvent_JobCompleted(),
+                )
+                oracle_db_service.outbox.create_webhook(
+                    db_session,
+                    escrow_address,
+                    chain_id,
+                    OracleWebhookTypes.exchange_oracle,
+                    event=RecordingOracleEvent_JobCompleted(),
+                )
+
         elif isinstance(validation_result, ValidationFailure):
             error_type_counts = Counter(
                 type(e).__name__ for e in validation_result.rejected_jobs.values()
@@ -219,3 +251,21 @@ def validate_results(
     )
     validator.set_logger(logger)
     validator.validate()
+
+def cancel_validate_results(
+    escrow_address: str,
+    chain_id: int,
+    db_session: Session,
+):
+    logger = get_function_logger(module_logger_name)
+
+    manifest = parse_manifest(escrow.get_escrow_manifest(chain_id, escrow_address))
+
+    validator = _TaskValidator(
+        escrow_address=escrow_address, chain_id=chain_id, manifest=manifest, db_session=db_session, is_cancellation_flow=True
+    )
+    validator.set_logger(logger)
+    if validator.check_file_existence():
+        validator.validate()
+    else:
+        logger.info(f"No annotation results found for {escrow_address}, skipping validation")

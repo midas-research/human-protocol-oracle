@@ -75,7 +75,7 @@ class ExchangeOracleEventTypes(str, Enum, metaclass=BetterEnumMeta):
 
 class JobLauncherEventTypes(str, Enum, metaclass=BetterEnumMeta):
     escrow_created = "escrow_created"
-    escrow_canceled = "escrow_canceled"
+    cancellation_requested = "cancellation_requested"
 
 
 class RecordingOracleEventTypes(str, Enum, metaclass=BetterEnumMeta):
@@ -86,6 +86,7 @@ class RecordingOracleEventTypes(str, Enum, metaclass=BetterEnumMeta):
 class ReputationOracleEventTypes(str, Enum, metaclass=BetterEnumMeta):
     # TODO: rename to ReputationOracleEventType
     escrow_completed = "escrow_completed"
+    escrow_canceled = "escrow_canceled"
 
 
 class OracleWebhookStatuses(str, Enum, metaclass=BetterEnumMeta):

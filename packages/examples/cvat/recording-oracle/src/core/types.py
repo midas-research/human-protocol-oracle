@@ -25,6 +25,7 @@ class OracleWebhookTypes(str, Enum):
     exchange_oracle = "exchange_oracle"
     recording_oracle = "recording_oracle"
     reputation_oracle = "reputation_oracle"
+    job_launcher = "job_launcher"
 
 
 class OracleWebhookStatuses(str, Enum):
@@ -42,3 +43,6 @@ class ExchangeOracleEventTypes(str, Enum, metaclass=BetterEnumMeta):
 class RecordingOracleEventTypes(str, Enum, metaclass=BetterEnumMeta):
     job_completed = "job_completed"
     submission_rejected = "submission_rejected"
+
+class JobLauncherEventTypes(str, Enum, metaclass=BetterEnumMeta):
+    cancellation_requested = "cancellation_requested"
