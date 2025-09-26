@@ -500,6 +500,15 @@ def finish_escrow_creations_by_escrow_address(
     )
     session.execute(statement)
 
+def update_escrow_creation(session: Session, escrow_address: str, chain_id: int, total_jobs: int) -> None:
+    stmt = (
+        update(EscrowCreation)
+        .where(
+            EscrowCreation.escrow_address == escrow_address, EscrowCreation.chain_id == chain_id
+        )
+        .values(total_jobs=total_jobs)
+    )
+    session.execute(stmt)
 
 # EscrowValidation
 
