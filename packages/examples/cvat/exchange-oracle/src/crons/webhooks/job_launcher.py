@@ -103,7 +103,7 @@ def handle_job_launcher_event(webhook: Webhook, *, db_session: Session, logger: 
             validate_escrow(
                 webhook.chain_id,
                 webhook.escrow_address,
-                accepted_states=[EscrowStatus.Pending, EscrowStatus.Cancelled],
+                accepted_states=[EscrowStatus.ToCancel],
             )
 
             projects = cvat_db_service.get_projects_by_escrow_address(

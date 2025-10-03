@@ -1,6 +1,7 @@
 import logging
 
 from sqlalchemy.orm import Session
+from human_protocol_sdk.constants import Status as EscrowStatus
 
 import src.services.webhook as oracle_db_service
 from src.chain.escrow import validate_escrow
@@ -34,7 +35,7 @@ def handle_job_launcher_event(webhook: Webhook, *, db_session: Session):
 
     match webhook.event_type:
         case JobLauncherEventTypes.cancellation_requested:
-            validate_escrow(webhook.chain_id, webhook.escrow_address)
+            validate_escrow(webhook.chain_id, webhook.escrow_address,  accepted_states=[EscrowStatus.ToCancel],)
 
             cancel_validate_results(
                 escrow_address=webhook.escrow_address,
