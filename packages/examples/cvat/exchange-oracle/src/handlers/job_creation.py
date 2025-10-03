@@ -2993,6 +2993,8 @@ class AudinoTaskBuilder:
         data_filenames = filter_audio_files(data_filenames)
 
         gt_file_data = gt_bucket_client.download_file(gt_bucket.path)
+        gt_file_data_json = json.loads(gt_file_data)
+        no_of_jobs = len(gt_file_data_json['time_stamps']) // 2
 
         # Validate and parse GT
         # gt_dataset = self._parse_gt_dataset(gt_file_data, add_prefix=data_bucket.path)
@@ -3020,14 +3022,13 @@ class AudinoTaskBuilder:
         cvat_webhook = cvat_api.create_cvat_webhook(cvat_project.id)
 
         with SessionLocal.begin() as session:
-            # total_jobs = len(job_configuration)
-            # self.logger.info(
-            #     "Task creation for escrow '%s': will create %s assignments",
-            #     escrow_address,
-            #     total_jobs,
-            # )
+            self.logger.info(
+                "Task creation for escrow '%s': will create %s assignments",
+                escrow_address,
+                no_of_jobs,
+            )
             db_service.create_escrow_creation(
-                session, escrow_address=escrow_address, chain_id=chain_id, total_jobs=1
+                session, escrow_address=escrow_address, chain_id=chain_id, total_jobs=no_of_jobs + 1 # +1 for GT job
             )
 
             project_id = db_service.create_project(
