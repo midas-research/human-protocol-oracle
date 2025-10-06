@@ -69,9 +69,14 @@ def get_escrow_manifest(chain_id: int, escrow_address: str) -> dict:
     )
 
 
-def get_escrow_fund_amount(chain_id: int, escrow_address: str):
+def get_escrow_fund_amount(chain_id: int, escrow_address: str, reward_token: str) -> float:
     escrow = get_escrow(chain_id, escrow_address)
-    return float(escrow.total_funded_amount / 1e18)
+    decimal = 1e18 # hmt
+    if reward_token == "USDC":
+        decimal = 1e6
+    elif reward_token == "USDT" or reward_token == "USDT0":
+        decimal = 1e6
+    return float(escrow.total_funded_amount / decimal)
 
 
 def get_available_webhook_types(
