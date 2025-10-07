@@ -707,13 +707,20 @@ class AudinoDatasetComparator:
         score = 0.0
 
         if self._task_type == TaskTypes.audio_transcription:
-            gt_transcriptions = " ".join([gt.get("text", "") for gt in gt_samples_filtered]).lower()
-            ds_transcriptions = " ".join([ds.get("text", "") for ds in ds_samples_filtered]).lower()
+            total_transcriptions = len(ds_dataset)
+            empty_transcriptions = sum(1 for ds in ds_dataset if not ds.get("text", "").strip())
 
-            wer = min(max(self.word_error_rate(gt_transcriptions, ds_transcriptions), 0.0), 1.0)
-            cer = min(max(self.character_error_rate(gt_transcriptions, ds_transcriptions), 0.0), 1.0)
+            if total_transcriptions == 0 or (empty_transcriptions / total_transcriptions) > self._min_similarity_threshold:
+                score = 0.0
+            else:
+                gt_transcriptions = " ".join([gt.get("text", "") for gt in gt_samples_filtered]).lower()
+                ds_transcriptions = " ".join([ds.get("text", "") for ds in ds_samples_filtered]).lower()
 
-            score = min(max((1 - wer + 1 - cer) / 2.0, 0.0), 1.0)
+                wer = min(max(self.word_error_rate(gt_transcriptions, ds_transcriptions), 0.0), 1.0)
+                cer = min(max(self.character_error_rate(gt_transcriptions, ds_transcriptions), 0.0), 1.0)
+
+                # weights: 70% for WER, 30% for CER
+                score = min(max(0.7 * (1 - wer) + 0.3 * (1 - cer), 0.0), 1.0)
 
         elif self._task_type == TaskTypes.audio_attribute_annotation:
             penalty_factor = 0.1

@@ -44,7 +44,8 @@ def serialize_job(
                 )
 
         jobs = cvat_service.get_jobs_by_cvat_project_id(session, project.cvat_id)
-        fund_amount = get_escrow_fund_amount(project.chain_id, project.escrow_address)
+        reward_token = get_escrow_fund_token_symbol(project.chain_id, project.escrow_address)
+        fund_amount = get_escrow_fund_amount(project.chain_id, project.escrow_address, reward_token)
 
         if project.status == ProjectStatuses.canceled:
             api_status = service_api.JobStatuses.canceled
@@ -55,7 +56,6 @@ def serialize_job(
         else:
             raise AssertionError(f"Unexpected project status '{project.status}'")
 
-        reward_token = get_escrow_fund_token_symbol(project.chain_id, project.escrow_address)
         return service_api.JobResponse(
             escrow_address=project.escrow_address,
             chain_id=project.chain_id,
@@ -114,7 +114,8 @@ def serialize_assignment(
                 )
 
         jobs = cvat_service.get_jobs_by_cvat_project_id(session, project.cvat_id)
-        fund_amount = get_escrow_fund_amount(project.chain_id, project.escrow_address)
+        reward_token = get_escrow_fund_token_symbol(project.chain_id, project.escrow_address)
+        fund_amount = get_escrow_fund_amount(project.chain_id, project.escrow_address, reward_token)
 
         assignment_status_mapping = {
             AssignmentStatuses.created: service_api.AssignmentStatuses.active,
@@ -131,7 +132,6 @@ def serialize_assignment(
         else:
             api_status = assignment_status_mapping[assignment.status]
 
-        reward_token = get_escrow_fund_token_symbol(project.chain_id, project.escrow_address)
         return service_api.AssignmentResponse(
             assignment_id=assignment.id,
             escrow_address=project.escrow_address,
