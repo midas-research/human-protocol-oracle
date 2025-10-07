@@ -75,4 +75,7 @@ def get_available_webhook_types(
     chain_id: int, escrow_address: str
 ) -> dict[str, OracleWebhookTypes]:
     escrow = get_escrow(chain_id, escrow_address)
-    return {(escrow.exchange_oracle or "").lower(): OracleWebhookTypes.exchange_oracle}
+    return {
+        (escrow.exchange_oracle or "").lower(): OracleWebhookTypes.exchange_oracle,
+        (escrow.launcher or "").lower(): OracleWebhookTypes.job_launcher,
+    }

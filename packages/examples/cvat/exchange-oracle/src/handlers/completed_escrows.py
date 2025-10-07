@@ -300,8 +300,8 @@ def _download_job_annotations(
                     job.cvat_project_id,
                     job.cvat_task_id,
                     job.cvat_id,
-                    job_assignment.user.cvat_id,
-                    job_assignment.id,
+                    job_assignment.user.cvat_id if job_assignment else "NONE",
+                    job_assignment.id if job_assignment else "NONE",
                 ),
                 file=job_annotations_file,
             )
