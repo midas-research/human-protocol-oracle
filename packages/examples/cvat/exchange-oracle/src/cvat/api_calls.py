@@ -658,8 +658,8 @@ def clear_job_annotations(job_id: int) -> None:
                 shape["transcript"] = ''
                 attributes = [
                     models.AttributeValRequest(
-                        spec_id=attr["spec_id"],
-                        value=attr["value"]
+                        spec_id=attr["id"],
+                        value=attr["values"][0] if attr["values"] else "",
                     )
                     for attr in default_label["attributes"]
                 ]
@@ -667,7 +667,7 @@ def clear_job_annotations(job_id: int) -> None:
                     id=shape["id"],
                     type=shape["type"],
                     points=shape["points"],
-                    label_id=default_label["label_id"],
+                    label_id=default_label["id"],
                     attributes=attributes,
                     frame=shape["frame"],
                 ))
