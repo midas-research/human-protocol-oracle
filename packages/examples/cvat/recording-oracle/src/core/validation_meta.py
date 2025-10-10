@@ -19,3 +19,6 @@ class ResultMeta(BaseModel):
 class ValidationMeta(BaseModel):
     jobs: list[JobMeta]
     results: list[ResultMeta]
+
+    def get_jobs_length(self) -> int:
+        return len(self.jobs)

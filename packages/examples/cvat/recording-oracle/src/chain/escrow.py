@@ -5,7 +5,7 @@ from human_protocol_sdk.encryption import Encryption, EncryptionUtils
 from human_protocol_sdk.escrow import EscrowClient, EscrowData, EscrowUtils
 from human_protocol_sdk.storage import StorageUtils
 
-from src.chain.web3 import get_web3
+from src.chain.web3 import get_web3, get_token_symbol
 from src.core.config import Config
 from src.core.types import OracleWebhookTypes
 
@@ -58,7 +58,7 @@ def get_escrow_manifest(chain_id: int, escrow_address: str) -> dict:
     return json.loads(manifest_content)
 
 
-def store_results(chain_id: int, escrow_address: str, url: str, hash: str, funds_to_reserve: int = 0) -> None:
+def store_results(chain_id: int, escrow_address: str, url: str, hash: str, funds_to_reserve: float = 0.0) -> None:
     web3 = get_web3(chain_id)
     escrow_client = EscrowClient(web3)
 
@@ -79,3 +79,14 @@ def get_available_webhook_types(
         (escrow.exchange_oracle or "").lower(): OracleWebhookTypes.exchange_oracle,
         (escrow.launcher or "").lower(): OracleWebhookTypes.job_launcher,
     }
+
+def get_escrow_fund_amount(chain_id: int, escrow_address: str) -> float:
+    escrow = get_escrow(chain_id, escrow_address)
+    reward_token = get_token_symbol(chain_id, escrow.token)
+
+    decimal = 1e18 # hmt
+    if reward_token == "USDC":
+        decimal = 1e6
+    elif reward_token == "USDT" or reward_token == "USDT0":
+        decimal = 1e6
+    return float(escrow.total_funded_amount / decimal)

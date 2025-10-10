@@ -26,6 +26,7 @@ from src.handlers.process_intermediate_results import (
     parse_annotation_metafile,
     process_intermediate_results,
     serialize_validation_meta,
+    filter_jobs_results_validation_meta,
 )
 from src.log import ROOT_LOGGER_NAME
 from src.services.cloud import make_client as make_cloud_client
@@ -119,6 +120,7 @@ class _TaskValidator:
             merged_annotations=io.BytesIO(self.merged_annotations),
             manifest=self.manifest,
             logger=self.logger,
+            is_cancellation_flow=self.is_cancellation_flow,
         )
 
     def validate(self):
@@ -154,9 +156,24 @@ class _TaskValidator:
             recor_validation_meta_path = self._compose_validation_results_bucket_filename(
                 validation.VALIDATION_METAFILE_NAME,
             )
-            validation_metafile = serialize_validation_meta(validation_result.validation_meta)
+            total_jobs_length = validation_result.validation_meta.get_jobs_length()
+            threshold = self.manifest.validation.min_quality
+            validation_meta = filter_jobs_results_validation_meta(validation_result.validation_meta, threshold=threshold)
+            passed_jobs_length = validation_meta.get_jobs_length()
+            logger.info(
+                f"Out of {total_jobs_length} jobs, {passed_jobs_length} passed the quality threshold of {threshold * 100:.2f}%"
+            )
+
+            validation_metafile = serialize_validation_meta(validation_meta)
 
             storage_client = make_cloud_client(BucketAccessInfo.parse_obj(Config.storage_config))
+
+            total_escrow_fund_amount = escrow.get_escrow_fund_amount(chain_id, escrow_address)
+            job_fund_amount = total_escrow_fund_amount / total_jobs_length
+            logger.info(
+                f"Total escrow fund amount is {total_escrow_fund_amount} wei, "
+                f"each job is funded with {job_fund_amount} wei"
+            )
 
             # TODO: add encryption
             storage_client.create_file(
@@ -173,6 +190,7 @@ class _TaskValidator:
                 escrow_address,
                 Config.storage_config.bucket_url() + os.path.dirname(recor_merged_annotations_path),  # noqa: PTH120
                 compute_resulting_annotations_hash(validation_result.resulting_annotations),
+                funds_to_reserve=(job_fund_amount * passed_jobs_length),
             )
 
             if self.is_cancellation_flow:
