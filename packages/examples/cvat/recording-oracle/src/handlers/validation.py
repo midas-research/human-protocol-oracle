@@ -277,6 +277,12 @@ def cancel_validate_results(
 ):
     logger = get_function_logger(module_logger_name)
 
+    if escrow.check_escrow_cancelled(chain_id, escrow_address):
+        logger.info(
+            f"Escrow {escrow_address} is already in Cancelled state, skipping cancellation handling"
+        )
+        return
+
     manifest = parse_manifest(escrow.get_escrow_manifest(chain_id, escrow_address))
 
     validator = _TaskValidator(
@@ -287,3 +293,4 @@ def cancel_validate_results(
         validator.validate()
     else:
         logger.info(f"No annotation results found for {escrow_address}, skipping validation")
+        raise ValueError("No annotation results found, skipping validation")

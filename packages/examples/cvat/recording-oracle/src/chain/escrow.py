@@ -65,8 +65,8 @@ def store_results(chain_id: int, escrow_address: str, url: str, hash: str, funds
     try:
         escrow_client.store_results(escrow_address, url, hash)
     except Exception as e:
-        if "DEPRECATED_SIGNATURE" in str(e) or "ErrorStoreResultsVersion" in str(e):
-            escrow_client.store_results(escrow_address, url, hash, funds_to_reserve)
+        if "DEPRECATED_SIGNATURE" in str(e)  or "Invalid store_results parameters" in str(e):
+            escrow_client.store_results(escrow_address, url, hash, int(funds_to_reserve))
         else:
             raise e
 
@@ -90,3 +90,7 @@ def get_escrow_fund_amount(chain_id: int, escrow_address: str) -> float:
     elif reward_token == "USDT" or reward_token == "USDT0":
         decimal = 1e6
     return float(escrow.total_funded_amount / decimal)
+
+def check_escrow_cancelled(chain_id: int, escrow_address: str) -> bool:
+    escrow = get_escrow(chain_id, escrow_address)
+    return Status[escrow.status] == Status.Cancelled
