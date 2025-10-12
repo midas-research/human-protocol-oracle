@@ -14,7 +14,7 @@ from src.core.manifest import TaskManifest, parse_manifest
 from src.core.oracle_events import (
     RecordingOracleEvent_JobCompleted,
     RecordingOracleEvent_SubmissionRejected,
-    RecordingOracleEvent_JobCancelled
+    RecordingOracleEvent_JobCanceled
 )
 from src.core.storage import (
     compose_results_bucket_filename as compose_annotation_results_bucket_filename,
@@ -199,7 +199,7 @@ class _TaskValidator:
                     escrow_address,
                     chain_id,
                     OracleWebhookTypes.reputation_oracle,
-                    event=RecordingOracleEvent_JobCancelled(),
+                    event=RecordingOracleEvent_JobCanceled(),
                 )
             else:
                 oracle_db_service.outbox.create_webhook(

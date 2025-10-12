@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
-from src.core.types import ExchangeOracleEventTypes, OracleWebhookTypes, RecordingOracleEventTypes, JobLauncherEventTypes
+from src.core.types import ExchangeOracleEventTypes, OracleWebhookTypes, RecordingOracleEventTypes, JobLauncherEventTypes, ReputationOracleEventTypes
 
-EventTypeTag = ExchangeOracleEventTypes | RecordingOracleEventTypes | JobLauncherEventTypes
+EventTypeTag = ExchangeOracleEventTypes | RecordingOracleEventTypes | JobLauncherEventTypes | ReputationOracleEventTypes
 
 
 class OracleEvent(BaseModel):
@@ -14,7 +14,7 @@ class OracleEvent(BaseModel):
 class RecordingOracleEvent_JobCompleted(OracleEvent):
     pass  # escrow is enough for now
 
-class RecordingOracleEvent_JobCancelled(OracleEvent):
+class RecordingOracleEvent_JobCanceled(OracleEvent):
     pass  # escrow is enough for now
 
 
@@ -39,7 +39,7 @@ class ExchangeOracleEvent_JobFinished(OracleEvent):
 class ExchangeOracleEvent_EscrowCleaned(OracleEvent):
     pass
 
-class JobLauncherEvent_JobCancelled(OracleEvent):
+class JobLauncherEvent_JobCanceled(OracleEvent):
     pass  # escrow is enough for now
 
 
@@ -49,7 +49,8 @@ _event_type_map = {
     ExchangeOracleEventTypes.job_creation_failed: ExchangeOracleEvent_JobCreationFailed,
     ExchangeOracleEventTypes.job_finished: ExchangeOracleEvent_JobFinished,
     ExchangeOracleEventTypes.escrow_cleaned: ExchangeOracleEvent_EscrowCleaned,
-    JobLauncherEventTypes.cancellation_requested: JobLauncherEvent_JobCancelled,
+    JobLauncherEventTypes.cancellation_requested: JobLauncherEvent_JobCanceled,
+    ReputationOracleEventTypes.job_canceled: RecordingOracleEvent_JobCanceled,
 }
 
 
@@ -78,6 +79,7 @@ def parse_event(
         OracleWebhookTypes.recording_oracle: RecordingOracleEventTypes,
         OracleWebhookTypes.exchange_oracle: ExchangeOracleEventTypes,
         OracleWebhookTypes.job_launcher: JobLauncherEventTypes,
+        OracleWebhookTypes.reputation_oracle: ReputationOracleEventTypes
     }
 
     sender_events = sender_events_mapping.get(sender)
