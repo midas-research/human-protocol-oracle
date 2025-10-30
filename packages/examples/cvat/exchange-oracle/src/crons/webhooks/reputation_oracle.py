@@ -47,6 +47,9 @@ def process_incoming_reputation_oracle_webhooks(logger: logging.Logger, session:
                     )
 
                 case ReputationOracleEventTypes.escrow_canceled:
+                    projects = db_service.get_projects_by_escrow_address(
+                        session, webhook.escrow_address
+                    )
                     cleanup_escrow(webhook.escrow_address, Networks(webhook.chain_id), projects)
 
                     db_service.update_project_statuses_by_escrow_address(

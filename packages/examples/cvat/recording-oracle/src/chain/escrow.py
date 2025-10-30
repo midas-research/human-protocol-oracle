@@ -82,14 +82,8 @@ def get_available_webhook_types(
 
 def get_escrow_fund_amount(chain_id: int, escrow_address: str) -> float:
     escrow = get_escrow(chain_id, escrow_address)
-    reward_token = get_token_symbol(chain_id, escrow.token)
 
-    decimal = 1e18 # hmt
-    if reward_token == "USDC":
-        decimal = 1e6
-    elif reward_token == "USDT" or reward_token == "USDT0":
-        decimal = 1e6
-    return float(escrow.total_funded_amount / decimal)
+    return escrow.total_funded_amount
 
 def check_escrow_cancelled(chain_id: int, escrow_address: str) -> bool:
     escrow = get_escrow(chain_id, escrow_address)
