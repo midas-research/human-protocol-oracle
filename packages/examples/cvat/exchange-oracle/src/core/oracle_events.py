@@ -38,7 +38,7 @@ class RecordingOracleEvent_SubmissionRejected(OracleEvent):
     assignments: list[RejectedAssignmentInfo]
 
 
-class ExchangeOracleEvent_JobCreationFailed(OracleEvent):
+class ExchangeOracleEvent_EscrowFailed(OracleEvent):
     # no task_id, escrow is enough for now
     reason: str
 
@@ -54,6 +54,7 @@ class ExchangeOracleEvent_EscrowCleaned(OracleEvent):
 class ReputationOracleEvent_EscrowCompleted(OracleEvent):
     pass
 
+
 class ReputationOracleEvent_EscrowCanceled(OracleEvent):
     pass  # no data
 
@@ -63,7 +64,7 @@ _event_type_map = {
     JobLauncherEventTypes.cancellation_requested: JobLauncherEvent_EscrowCanceledRequested,
     RecordingOracleEventTypes.job_completed: RecordingOracleEvent_JobCompleted,
     RecordingOracleEventTypes.submission_rejected: RecordingOracleEvent_SubmissionRejected,
-    ExchangeOracleEventTypes.job_creation_failed: ExchangeOracleEvent_JobCreationFailed,
+    ExchangeOracleEventTypes.escrow_failed: ExchangeOracleEvent_EscrowFailed,
     ExchangeOracleEventTypes.job_finished: ExchangeOracleEvent_JobFinished,
     ExchangeOracleEventTypes.escrow_cleaned: ExchangeOracleEvent_EscrowCleaned,
     ReputationOracleEventTypes.escrow_completed: ReputationOracleEvent_EscrowCompleted,
