@@ -5,7 +5,7 @@ from human_protocol_sdk.encryption import Encryption, EncryptionUtils
 from human_protocol_sdk.escrow import EscrowClient, EscrowData, EscrowUtils
 from human_protocol_sdk.storage import StorageUtils
 
-from src.chain.web3 import get_web3
+from src.chain.web3 import get_web3, get_token_symbol
 from src.core.config import Config
 from src.core.types import OracleWebhookTypes
 
@@ -58,15 +58,33 @@ def get_escrow_manifest(chain_id: int, escrow_address: str) -> dict:
     return json.loads(manifest_content)
 
 
-def store_results(chain_id: int, escrow_address: str, url: str, hash: str) -> None:
+def store_results(chain_id: int, escrow_address: str, url: str, hash: str, funds_to_reserve: float = 0.0) -> None:
     web3 = get_web3(chain_id)
     escrow_client = EscrowClient(web3)
 
-    escrow_client.store_results(escrow_address, url, hash)
+    try:
+        escrow_client.store_results(escrow_address, url, hash)
+    except Exception as e:
+        if "DEPRECATED_SIGNATURE" in str(e)  or "Invalid store_results parameters" in str(e):
+            escrow_client.store_results(escrow_address, url, hash, int(funds_to_reserve))
+        else:
+            raise e
 
 
 def get_available_webhook_types(
     chain_id: int, escrow_address: str
 ) -> dict[str, OracleWebhookTypes]:
     escrow = get_escrow(chain_id, escrow_address)
-    return {(escrow.exchange_oracle or "").lower(): OracleWebhookTypes.exchange_oracle}
+    return {
+        (escrow.exchange_oracle or "").lower(): OracleWebhookTypes.exchange_oracle,
+        (escrow.launcher or "").lower(): OracleWebhookTypes.job_launcher,
+    }
+
+def get_escrow_fund_amount(chain_id: int, escrow_address: str) -> float:
+    escrow = get_escrow(chain_id, escrow_address)
+
+    return escrow.total_funded_amount
+
+def check_escrow_cancelled(chain_id: int, escrow_address: str) -> bool:
+    escrow = get_escrow(chain_id, escrow_address)
+    return Status[escrow.status] == Status.Cancelled

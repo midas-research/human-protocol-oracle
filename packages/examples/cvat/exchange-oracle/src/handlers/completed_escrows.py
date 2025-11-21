@@ -65,7 +65,6 @@ def _download_with_retries(
                 raise
     return None
 
-
 def _export_escrow_annotations(
     logger: logging.Logger,
     chain_id: int,
@@ -138,13 +137,20 @@ def _export_escrow_annotations(
         escrow_address=escrow_address,
     )
 
-    oracle_db_service.outbox.create_webhook(
-        session,
-        escrow_address=escrow_address,
-        chain_id=chain_id,
-        type=OracleWebhookTypes.recording_oracle,
-        event=ExchangeOracleEvent_JobFinished(),
-    )
+def export_escrow_annotations(
+    logger: logging.Logger,
+    chain_id: int,
+    escrow_address: str,
+    escrow_projects: Sequence[Project],
+    session: Session,
+) -> None:
+    """
+    Export annotations for the given escrow address.
+
+    This function fetches the manifest for the escrow, downloads the annotations
+    from CVAT, post-processes them, and uploads the results to cloud storage.
+    """
+    _export_escrow_annotations(logger, chain_id, escrow_address, escrow_projects, session)
 
     logger.info(
         f"The escrow ({escrow_address=}) is completed, "
@@ -294,8 +300,8 @@ def _download_job_annotations(
                     job.cvat_project_id,
                     job.cvat_task_id,
                     job.cvat_id,
-                    job_assignment.user.cvat_id,
-                    job_assignment.id,
+                    job_assignment.user.cvat_id if job_assignment else "NONE",
+                    job_assignment.id if job_assignment else "NONE",
                 ),
                 file=job_annotations_file,
             )
@@ -314,6 +320,19 @@ def _handle_escrow_validation(
         session, escrow_address, limit=None, for_update=ForUpdateParams(nowait=True)
     )
     _export_escrow_annotations(logger, chain_id, escrow_address, escrow_projects, session)
+
+    oracle_db_service.outbox.create_webhook(
+        session,
+        escrow_address=escrow_address,
+        chain_id=chain_id,
+        type=OracleWebhookTypes.recording_oracle,
+        event=ExchangeOracleEvent_JobFinished(),
+    )
+
+    logger.info(
+        f"The escrow ({escrow_address=}) is completed, "
+        f"resulting annotations are processed successfully"
+    )
 
 
 def handle_escrows_validations(logger: logging.Logger) -> None:

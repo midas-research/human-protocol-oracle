@@ -45,6 +45,20 @@ def process_incoming_reputation_oracle_webhooks(logger: logging.Logger, session:
                         type=OracleWebhookTypes.recording_oracle,
                         event=ExchangeOracleEvent_EscrowCleaned(),
                     )
+
+                case ReputationOracleEventTypes.escrow_canceled:
+                    projects = db_service.get_projects_by_escrow_address(
+                        session, webhook.escrow_address
+                    )
+                    cleanup_escrow(webhook.escrow_address, Networks(webhook.chain_id), projects)
+
+                    db_service.update_project_statuses_by_escrow_address(
+                        session,
+                        webhook.escrow_address,
+                        webhook.chain_id,
+                        status=ProjectStatuses.deleted,
+                    )
+
                 case _:
                     raise TypeError(f"Unknown reputation oracle event {webhook.event_type}")
 

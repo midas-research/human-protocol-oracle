@@ -48,9 +48,10 @@ class TaskTypes(str, Enum, metaclass=BetterEnumMeta):
     audio_transcription = "audio_transcription"
     audio_attribute_annotation = "audio_attribute_annotation"
 
+
 class AudinoTaskTypes(str, Enum):
     audio_transcription = ["is_start", "is_end", "is_transcription"]
-    audio_attribute_annotation= ["is_start", "is_end"]
+    audio_attribute_annotation = ["is_start", "is_end"]
 
 
 class CvatLabelTypes(str, Enum, metaclass=BetterEnumMeta):
@@ -68,14 +69,14 @@ class OracleWebhookTypes(str, Enum, metaclass=BetterEnumMeta):
 
 
 class ExchangeOracleEventTypes(str, Enum, metaclass=BetterEnumMeta):
-    job_creation_failed = "job_creation_failed"
+    escrow_failed = "escrow_failed"
     job_finished = "job_finished"
     escrow_cleaned = "escrow_cleaned"
 
 
 class JobLauncherEventTypes(str, Enum, metaclass=BetterEnumMeta):
     escrow_created = "escrow_created"
-    escrow_canceled = "escrow_canceled"
+    cancellation_requested = "cancellation_requested"
 
 
 class RecordingOracleEventTypes(str, Enum, metaclass=BetterEnumMeta):
@@ -86,6 +87,7 @@ class RecordingOracleEventTypes(str, Enum, metaclass=BetterEnumMeta):
 class ReputationOracleEventTypes(str, Enum, metaclass=BetterEnumMeta):
     # TODO: rename to ReputationOracleEventType
     escrow_completed = "escrow_completed"
+    escrow_canceled = "escrow_canceled"
 
 
 class OracleWebhookStatuses(str, Enum, metaclass=BetterEnumMeta):

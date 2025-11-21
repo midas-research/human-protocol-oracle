@@ -2,6 +2,8 @@ import io
 import os
 import zipfile
 import math
+import string
+import random
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -94,13 +96,14 @@ def prepare_annotation_metafile(
     else:
         jobs_start_time: dict[int, float] = {}
 
+    characters = string.ascii_letters + string.digits
     meta = AnnotationMeta(
         jobs=[
             JobMeta(
                 job_id=job.cvat_id,
                 annotation_filename=job_annotations[job.cvat_id].filename,
-                annotator_wallet_address=job.latest_assignment.user_wallet_address,
-                assignment_id=job.latest_assignment.id,
+                annotator_wallet_address=job.latest_assignment.user_wallet_address if job.latest_assignment else "NONE",
+                assignment_id=job.latest_assignment.id if job.latest_assignment else ''.join(random.choices(characters, k=10)),
                 task_id=job.cvat_task_id,
                 start_frame=job.start_frame,
                 stop_frame=job.stop_frame,

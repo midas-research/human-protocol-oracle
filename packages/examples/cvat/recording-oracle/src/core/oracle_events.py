@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 
-from src.core.types import ExchangeOracleEventTypes, OracleWebhookTypes, RecordingOracleEventTypes
+from src.core.types import ExchangeOracleEventTypes, OracleWebhookTypes, RecordingOracleEventTypes, JobLauncherEventTypes, ReputationOracleEventTypes
 
-EventTypeTag = ExchangeOracleEventTypes | RecordingOracleEventTypes
+EventTypeTag = ExchangeOracleEventTypes | RecordingOracleEventTypes | JobLauncherEventTypes | ReputationOracleEventTypes
 
 
 class OracleEvent(BaseModel):
@@ -12,6 +12,9 @@ class OracleEvent(BaseModel):
 
 
 class RecordingOracleEvent_JobCompleted(OracleEvent):
+    pass  # escrow is enough for now
+
+class RecordingOracleEvent_JobCanceled(OracleEvent):
     pass  # escrow is enough for now
 
 
@@ -24,7 +27,7 @@ class RecordingOracleEvent_SubmissionRejected(OracleEvent):
     assignments: list[RejectedAssignmentInfo]
 
 
-class ExchangeOracleEvent_JobCreationFailed(OracleEvent):
+class ExchangeOracleEvent_EscrowFailed(OracleEvent):
     # no task_id, escrow is enough for now
     reason: str
 
@@ -36,13 +39,18 @@ class ExchangeOracleEvent_JobFinished(OracleEvent):
 class ExchangeOracleEvent_EscrowCleaned(OracleEvent):
     pass
 
+class JobLauncherEvent_JobCanceled(OracleEvent):
+    pass  # escrow is enough for now
+
 
 _event_type_map = {
     RecordingOracleEventTypes.job_completed: RecordingOracleEvent_JobCompleted,
     RecordingOracleEventTypes.submission_rejected: RecordingOracleEvent_SubmissionRejected,
-    ExchangeOracleEventTypes.job_creation_failed: ExchangeOracleEvent_JobCreationFailed,
+    ExchangeOracleEventTypes.escrow_failed: ExchangeOracleEvent_EscrowFailed,
     ExchangeOracleEventTypes.job_finished: ExchangeOracleEvent_JobFinished,
     ExchangeOracleEventTypes.escrow_cleaned: ExchangeOracleEvent_EscrowCleaned,
+    JobLauncherEventTypes.cancellation_requested: JobLauncherEvent_JobCanceled,
+    ReputationOracleEventTypes.job_canceled: RecordingOracleEvent_JobCanceled,
 }
 
 
@@ -70,6 +78,8 @@ def parse_event(
     sender_events_mapping = {
         OracleWebhookTypes.recording_oracle: RecordingOracleEventTypes,
         OracleWebhookTypes.exchange_oracle: ExchangeOracleEventTypes,
+        OracleWebhookTypes.job_launcher: JobLauncherEventTypes,
+        OracleWebhookTypes.reputation_oracle: ReputationOracleEventTypes
     }
 
     sender_events = sender_events_mapping.get(sender)

@@ -10,13 +10,13 @@ from src.chain.escrow import validate_escrow
 from src.chain.kvstore import get_job_launcher_url
 from src.core.config import Config, CronConfig
 from src.core.oracle_events import (
-    ExchangeOracleEvent_EscrowCleaned,
-    ExchangeOracleEvent_JobCreationFailed,
+    ExchangeOracleEvent_EscrowFailed,
 )
 from src.core.types import JobLauncherEventTypes, Networks, OracleWebhookTypes, ProjectStatuses
 from src.crons._cron_job import cron_job
 from src.crons.webhooks._common import handle_webhook, process_outgoing_webhooks
 from src.db.utils import ForUpdateParams
+from src.handlers.completed_escrows import export_escrow_annotations
 from src.handlers.escrow_cleanup import cleanup_escrow
 from src.models.webhook import Webhook
 
@@ -36,7 +36,7 @@ def handle_failure(session: Session, webhook: Webhook, exc: Exception) -> None:
             escrow_address=webhook.escrow_address,
             chain_id=webhook.chain_id,
             type=OracleWebhookTypes.job_launcher,
-            event=ExchangeOracleEvent_JobCreationFailed(reason=str(exc)),
+            event=ExchangeOracleEvent_EscrowFailed(reason=str(exc)),
         )
 
 
@@ -98,11 +98,11 @@ def handle_job_launcher_event(webhook: Webhook, *, db_session: Session, logger: 
                 )
                 raise
 
-        case JobLauncherEventTypes.escrow_canceled:
+        case JobLauncherEventTypes.cancellation_requested:
             validate_escrow(
                 webhook.chain_id,
                 webhook.escrow_address,
-                accepted_states=[EscrowStatus.Pending, EscrowStatus.Cancelled],
+                accepted_states=[EscrowStatus.ToCancel],
             )
 
             projects = cvat_db_service.get_projects_by_escrow_address(
@@ -139,15 +139,11 @@ def handle_job_launcher_event(webhook: Webhook, *, db_session: Session, logger: 
             cvat_db_service.update_project_statuses_by_escrow_address(
                 db_session, webhook.escrow_address, webhook.chain_id, ProjectStatuses.canceled
             )
-            cleanup_escrow(webhook.escrow_address, Networks(webhook.chain_id), projects)
 
-            oracle_db_service.outbox.create_webhook(
-                session=db_session,
-                escrow_address=webhook.escrow_address,
-                chain_id=webhook.chain_id,
-                type=OracleWebhookTypes.recording_oracle,
-                event=ExchangeOracleEvent_EscrowCleaned(),
+            export_escrow_annotations(
+                logger, webhook.chain_id, webhook.escrow_address, projects, db_session
             )
+
         case _:
             raise AssertionError(f"Unknown job launcher event {webhook.event_type}")
 

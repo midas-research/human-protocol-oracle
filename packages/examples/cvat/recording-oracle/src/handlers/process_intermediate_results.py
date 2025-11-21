@@ -1179,6 +1179,7 @@ def process_intermediate_results(  # noqa: PLR0912
     merged_annotations: io.RawIOBase,
     manifest: TaskManifest,
     logger: logging.Logger,
+    is_cancellation_flow: bool = False,
 ) -> ValidationSuccess | ValidationFailure:
     should_complete = False
 
@@ -1258,6 +1259,13 @@ def process_intermediate_results(  # noqa: PLR0912
         logger.info(
             f"Validation for escrow_address={escrow_address}:"
             f" too many iterations, stopping annotation"
+        )
+        should_complete = True
+
+    if is_cancellation_flow:
+        logger.info(
+            f"Validation for escrow_address={escrow_address}:"
+            f" cancellation flow, stopping annotation"
         )
         should_complete = True
 
@@ -1402,3 +1410,10 @@ def parse_annotation_metafile(metafile: io.RawIOBase) -> AnnotationMeta:
 
 def serialize_validation_meta(validation_meta: ValidationMeta) -> bytes:
     return validation_meta.model_dump_json().encode()
+
+def filter_jobs_results_validation_meta(validation_meta: ValidationMeta, threshold: float) -> ValidationMeta:
+    filtered_jobs = [job for job in validation_meta.jobs if validation_meta.results[job.final_result_id].annotation_quality >= threshold]
+    filtered_results_ids = {job.final_result_id for job in filtered_jobs}
+    filtered_results = [result for i, result in enumerate(validation_meta.results) if i in filtered_results_ids]
+
+    return ValidationMeta(jobs=filtered_jobs, results=filtered_results)

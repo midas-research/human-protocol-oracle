@@ -97,6 +97,8 @@ class CronConfig:
     process_reputation_oracle_webhooks_chunk_size = int(
         getenv("PROCESS_REPUTATION_ORACLE_WEBHOOKS_CHUNK_SIZE", 5)
     )
+    process_job_launcher_webhooks_int = int(getenv("PROCESS_JOB_LAUNCHER_WEBHOOKS_INT", 3000))
+    process_job_launcher_webhooks_chunk_size = int(getenv("PROCESS_JOB_LAUNCHER_WEBHOOKS_CHUNK_SIZE", 5))
 
 
 class IStorageConfig:

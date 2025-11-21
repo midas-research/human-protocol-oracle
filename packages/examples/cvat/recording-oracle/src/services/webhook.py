@@ -9,7 +9,7 @@ from sqlalchemy.sql import select
 
 from src.core.config import Config
 from src.core.oracle_events import OracleEvent, validate_event
-from src.core.types import OracleWebhookStatuses, OracleWebhookTypes
+from src.core.types import OracleWebhookStatuses, OracleWebhookTypes, JobLauncherEventTypes
 from src.db.utils import ForUpdateParams
 from src.db.utils import maybe_for_update as _maybe_for_update
 from src.models.webhook import Webhook
@@ -121,6 +121,11 @@ class OracleWebhookQueue:
         session.execute(upd)
 
     def handle_webhook_fail(self, session: Session, webhook_id: str) -> None:
+        webhook = session.query(Webhook).filter(Webhook.id == webhook_id).first()
+        if webhook and webhook.event_type == JobLauncherEventTypes.cancellation_requested:
+            max_retries = 100  # hardcoded value
+        else:
+            max_retries = Config.webhook_max_retries
         upd = (
             update(Webhook)
             .where(Webhook.id == webhook_id)
@@ -128,7 +133,7 @@ class OracleWebhookQueue:
                 attempts=Webhook.attempts + 1,
                 status=case(
                     (
-                        Webhook.attempts + 1 >= Config.webhook_max_retries,
+                        Webhook.attempts + 1 >= max_retries,
                         OracleWebhookStatuses.failed.value,
                     ),
                     else_=OracleWebhookStatuses.pending.value,
